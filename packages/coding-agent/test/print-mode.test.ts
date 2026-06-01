@@ -1,4 +1,4 @@
-import type { AssistantMessage, ImageContent } from "@earendil-works/pi-ai";
+import type { AssistantMessage, ImageContent } from "@deepseek-helmsman/ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SessionShutdownEvent } from "../src/index.ts";
 import { runPrintMode } from "../src/modes/print-mode.ts";
@@ -38,9 +38,9 @@ function createAssistantMessage(options?: {
 	return {
 		role: "assistant",
 		content: options?.text ? [{ type: "text", text: options.text }] : [],
-		api: "openai-responses",
-		provider: "openai",
-		model: "gpt-4o-mini",
+		api: "openai-completions",
+		provider: "deepseek",
+		model: "deepseek-v4-flash",
 		usage: {
 			input: 0,
 			output: 0,

@@ -6,8 +6,8 @@
  */
 
 import { createInterface } from "node:readline";
-import { type ImageContent, modelsAreEqual } from "@earendil-works/pi-ai";
-import { ProcessTerminal, setKeybindings, TUI } from "@earendil-works/pi-tui";
+import { type ImageContent, modelsAreEqual } from "@deepseek-helmsman/ai";
+import { ProcessTerminal, setKeybindings, TUI } from "@deepseek-helmsman/tui";
 import chalk from "chalk";
 import { type Args, type Mode, parseArgs, printHelp } from "./cli/args.ts";
 import { processFileArguments } from "./cli/file-processor.ts";
@@ -351,8 +351,8 @@ function buildSessionOptions(
 	let cliThinkingFromModel = false;
 
 	// Model from CLI
-	// - supports --provider <name> --model <pattern>
-	// - supports --model <provider>/<pattern>
+	// - supports --provider deepseek --model <pattern>
+	// - supports --model deepseek/<pattern>
 	if (parsed.model) {
 		const resolved = resolveCliModel({
 			cliProvider: parsed.provider,
@@ -476,10 +476,10 @@ export interface MainOptions {
 
 export async function main(args: string[], options?: MainOptions) {
 	resetTimings();
-	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.PI_OFFLINE);
+	const offlineMode = args.includes("--offline") || isTruthyEnvFlag(process.env.DEEPSEEK_HELMSMAN_OFFLINE);
 	if (offlineMode) {
-		process.env.PI_OFFLINE = "1";
-		process.env.PI_SKIP_VERSION_CHECK = "1";
+		process.env.DEEPSEEK_HELMSMAN_OFFLINE = "1";
+		process.env.DEEPSEEK_HELMSMAN_SKIP_VERSION_CHECK = "1";
 	}
 
 	if (process.platform === "win32") {
@@ -733,9 +733,9 @@ export async function main(args: string[], options?: MainOptions) {
 		process.exit(1);
 	}
 
-	const startupBenchmark = isTruthyEnvFlag(process.env.PI_STARTUP_BENCHMARK);
+	const startupBenchmark = isTruthyEnvFlag(process.env.DEEPSEEK_HELMSMAN_STARTUP_BENCHMARK);
 	if (startupBenchmark && appMode !== "interactive") {
-		console.error(chalk.red("Error: PI_STARTUP_BENCHMARK only supports interactive mode"));
+		console.error(chalk.red("Error: DEEPSEEK_HELMSMAN_STARTUP_BENCHMARK only supports interactive mode"));
 		process.exit(1);
 	}
 

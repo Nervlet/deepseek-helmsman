@@ -1,6 +1,4 @@
-import type { PhotonImageType } from "./photon.ts";
-
-type Photon = typeof import("@silvia-odwyer/photon-node");
+import type { PhotonImageType, PhotonModule } from "./photon.ts";
 
 function readOrientationFromTiff(bytes: Uint8Array, tiffStart: number): number {
 	if (tiffStart + 8 > bytes.length) return 1;
@@ -123,7 +121,7 @@ function getExifOrientation(bytes: Uint8Array): number {
 
 type DstIndexFn = (x: number, y: number, w: number, h: number) => number;
 
-function rotate90(photon: Photon, image: PhotonImageType, dstIndex: DstIndexFn): PhotonImageType {
+function rotate90(photon: PhotonModule, image: PhotonImageType, dstIndex: DstIndexFn): PhotonImageType {
 	const w = image.get_width();
 	const h = image.get_height();
 	const src = image.get_raw_pixels();
@@ -145,7 +143,7 @@ function rotate90(photon: Photon, image: PhotonImageType, dstIndex: DstIndexFn):
 
 // Flip orientations mutate in-place. Rotations return a new image (caller must free the old one if different).
 export function applyExifOrientation(
-	photon: Photon,
+	photon: PhotonModule,
 	image: PhotonImageType,
 	originalBytes: Uint8Array,
 ): PhotonImageType {

@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
-import { type AssistantMessage, getModel } from "@earendil-works/pi-ai";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { type AssistantMessage, getModel } from "@deepseek-helmsman/ai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -59,11 +59,11 @@ describe("AgentSession auto-compaction queue resume", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-auto-compaction-queue-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-auto-compaction-queue-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 		vi.useFakeTimers();
 
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			initialState: {
 				model,
@@ -75,7 +75,7 @@ describe("AgentSession auto-compaction queue resume", () => {
 		sessionManager = SessionManager.inMemory();
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
 
 		session = new AgentSession({

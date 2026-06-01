@@ -6,22 +6,22 @@
  * and can be activated via CLI flag, /preset command, or Ctrl+Shift+U to cycle.
  *
  * Config files (merged, project takes precedence):
- * - ~/.pi/agent/presets.json (global)
- * - <cwd>/.pi/presets.json (project-local)
+ * - ~/.deepseek-helmsman/agent/presets.json (global)
+ * - <cwd>/.deepseek-helmsman/presets.json (project-local)
  *
  * Example presets.json:
  * ```json
  * {
  *   "plan": {
- *     "provider": "openai-codex",
- *     "model": "gpt-5.2-codex",
+ *     "provider": "deepseek",
+ *     "model": "deepseek-v4-flash",
  *     "thinkingLevel": "high",
  *     "tools": ["read", "grep", "find", "ls"],
  *     "instructions": "You are in PLANNING MODE. Your job is to deeply understand the problem and create a detailed implementation plan.\n\nRules:\n- DO NOT make any changes. You cannot edit or write files.\n- Read files IN FULL (no offset/limit) to get complete context. Partial reads miss critical details.\n- Explore thoroughly: grep for related code, find similar patterns, understand the architecture.\n- Ask clarifying questions if requirements are ambiguous. Do not assume.\n- Identify risks, edge cases, and dependencies before proposing solutions.\n\nOutput:\n- Create a structured plan with numbered steps.\n- For each step: what to change, why, and potential risks.\n- List files that will be modified.\n- Note any tests that should be added or updated.\n\nWhen done, ask the user if they want you to:\n1. Write the plan to a markdown file (e.g., PLAN.md)\n2. Create a GitHub issue with the plan\n3. Proceed to implementation (they should switch to 'implement' preset)"
  *   },
  *   "implement": {
- *     "provider": "anthropic",
- *     "model": "claude-sonnet-4-5",
+ *     "provider": "deepseek",
+ *     "model": "deepseek-v4-pro",
  *     "thinkingLevel": "high",
  *     "tools": ["read", "bash", "edit", "write"],
  *     "instructions": "You are in IMPLEMENTATION MODE. Your job is to make focused, correct changes.\n\nRules:\n- Keep scope tight. Do exactly what was asked, no more.\n- Read files before editing to understand current state.\n- Make surgical edits. Prefer edit over write for existing files.\n- Explain your reasoning briefly before each change.\n- Run tests or type checks after changes if the project has them (npm test, npm run check, etc.).\n- If you encounter unexpected complexity, STOP and explain the issue rather than hacking around it.\n\nIf no plan exists:\n- Ask clarifying questions before starting.\n- Propose what you'll do and get confirmation for non-trivial changes.\n\nAfter completing changes:\n- Summarize what was done.\n- Note any follow-up work or tests that should be added."
@@ -30,7 +30,7 @@
  * ```
  *
  * Usage:
- * - `pi --preset plan` - start with plan preset
+ * - `deepseek-helmsman --preset plan` - start with plan preset
  * - `/preset` - show selector to switch presets mid-session
  * - `/preset implement` - switch to implement preset directly
  * - `Ctrl+Shift+U` - cycle through presets
@@ -40,16 +40,16 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import type { Api, Model } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder, getAgentDir } from "@earendil-works/pi-coding-agent";
-import { Container, Key, type SelectItem, SelectList, Text } from "@earendil-works/pi-tui";
+import type { Api, Model } from "@deepseek-helmsman/ai";
+import type { ExtensionAPI, ExtensionContext } from "@deepseek-helmsman/coding-agent";
+import { DynamicBorder, getAgentDir } from "@deepseek-helmsman/coding-agent";
+import { Container, Key, type SelectItem, SelectList, Text } from "@deepseek-helmsman/tui";
 
 // Preset configuration
 interface Preset {
-	/** Provider name (e.g., "anthropic", "openai") */
+	/** Provider name (e.g., "deepseek") */
 	provider?: string;
-	/** Model ID (e.g., "claude-sonnet-4-5") */
+	/** Model ID (e.g., "deepseek-v4-pro") */
 	model?: string;
 	/** Thinking level */
 	thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
@@ -69,7 +69,7 @@ interface PresetsConfig {
  */
 function loadPresets(cwd: string): PresetsConfig {
 	const globalPath = join(getAgentDir(), "presets.json");
-	const projectPath = join(cwd, ".pi", "presets.json");
+	const projectPath = join(cwd, ".deepseek-helmsman", "presets.json");
 
 	let globalPresets: PresetsConfig = {};
 	let projectPresets: PresetsConfig = {};
@@ -104,14 +104,14 @@ interface OriginalState {
 	tools: string[];
 }
 
-export default function presetExtension(pi: ExtensionAPI) {
+export default function presetExtension(api: ExtensionAPI) {
 	let presets: PresetsConfig = {};
 	let activePresetName: string | undefined;
 	let activePreset: Preset | undefined;
 	let originalState: OriginalState | undefined;
 
 	// Register --preset CLI flag
-	pi.registerFlag("preset", {
+	api.registerFlag("preset", {
 		description: "Preset configuration to use",
 		type: "string",
 	});
@@ -124,8 +124,8 @@ export default function presetExtension(pi: ExtensionAPI) {
 		if (activePresetName === undefined) {
 			originalState = {
 				model: ctx.model,
-				thinkingLevel: pi.getThinkingLevel(),
-				tools: pi.getActiveTools(),
+				thinkingLevel: api.getThinkingLevel(),
+				tools: api.getActiveTools(),
 			};
 		}
 
@@ -133,7 +133,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 		if (preset.provider && preset.model) {
 			const model = ctx.modelRegistry.find(preset.provider, preset.model);
 			if (model) {
-				const success = await pi.setModel(model);
+				const success = await api.setModel(model);
 				if (!success) {
 					ctx.ui.notify(`Preset "${name}": No API key for ${preset.provider}/${preset.model}`, "warning");
 				}
@@ -144,12 +144,12 @@ export default function presetExtension(pi: ExtensionAPI) {
 
 		// Apply thinking level if specified
 		if (preset.thinkingLevel) {
-			pi.setThinkingLevel(preset.thinkingLevel);
+			api.setThinkingLevel(preset.thinkingLevel);
 		}
 
 		// Apply tools if specified
 		if (preset.tools && preset.tools.length > 0) {
-			const allToolNames = pi.getAllTools().map((t) => t.name);
+			const allToolNames = api.getAllTools().map((t) => t.name);
 			const validTools = preset.tools.filter((t) => allToolNames.includes(t));
 			const invalidTools = preset.tools.filter((t) => !allToolNames.includes(t));
 
@@ -158,7 +158,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 			}
 
 			if (validTools.length > 0) {
-				pi.setActiveTools(validTools);
+				api.setActiveTools(validTools);
 			}
 		}
 
@@ -200,7 +200,10 @@ export default function presetExtension(pi: ExtensionAPI) {
 		const presetNames = Object.keys(presets);
 
 		if (presetNames.length === 0) {
-			ctx.ui.notify("No presets defined. Add presets to ~/.pi/agent/presets.json or .pi/presets.json", "warning");
+			ctx.ui.notify(
+				"No presets defined. Add presets to ~/.deepseek-helmsman/agent/presets.json or .deepseek-helmsman/presets.json",
+				"warning",
+			);
 			return;
 		}
 
@@ -270,12 +273,12 @@ export default function presetExtension(pi: ExtensionAPI) {
 			activePreset = undefined;
 			if (originalState) {
 				if (originalState.model) {
-					await pi.setModel(originalState.model);
+					await api.setModel(originalState.model);
 				}
-				pi.setThinkingLevel(originalState.thinkingLevel);
-				pi.setActiveTools(originalState.tools);
+				api.setThinkingLevel(originalState.thinkingLevel);
+				api.setActiveTools(originalState.tools);
 			} else {
-				pi.setActiveTools(["read", "bash", "edit", "write"]);
+				api.setActiveTools(["read", "bash", "edit", "write"]);
 			}
 			ctx.ui.notify("Preset cleared, defaults restored", "info");
 			updateStatus(ctx);
@@ -308,7 +311,10 @@ export default function presetExtension(pi: ExtensionAPI) {
 	async function cyclePreset(ctx: ExtensionContext): Promise<void> {
 		const presetNames = getPresetOrder();
 		if (presetNames.length === 0) {
-			ctx.ui.notify("No presets defined. Add presets to ~/.pi/agent/presets.json or .pi/presets.json", "warning");
+			ctx.ui.notify(
+				"No presets defined. Add presets to ~/.deepseek-helmsman/agent/presets.json or .deepseek-helmsman/presets.json",
+				"warning",
+			);
 			return;
 		}
 
@@ -323,12 +329,12 @@ export default function presetExtension(pi: ExtensionAPI) {
 			activePreset = undefined;
 			if (originalState) {
 				if (originalState.model) {
-					await pi.setModel(originalState.model);
+					await api.setModel(originalState.model);
 				}
-				pi.setThinkingLevel(originalState.thinkingLevel);
-				pi.setActiveTools(originalState.tools);
+				api.setThinkingLevel(originalState.thinkingLevel);
+				api.setActiveTools(originalState.tools);
 			} else {
-				pi.setActiveTools(["read", "bash", "edit", "write"]);
+				api.setActiveTools(["read", "bash", "edit", "write"]);
 			}
 			ctx.ui.notify("Preset cleared, defaults restored", "info");
 			updateStatus(ctx);
@@ -343,7 +349,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 		updateStatus(ctx);
 	}
 
-	pi.registerShortcut(Key.ctrlShift("u"), {
+	api.registerShortcut(Key.ctrlShift("u"), {
 		description: "Cycle presets",
 		handler: async (ctx) => {
 			await cyclePreset(ctx);
@@ -351,7 +357,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 	});
 
 	// Register /preset command
-	pi.registerCommand("preset", {
+	api.registerCommand("preset", {
 		description: "Switch preset configuration",
 		handler: async (args, ctx) => {
 			// If preset name provided, apply directly
@@ -377,7 +383,7 @@ export default function presetExtension(pi: ExtensionAPI) {
 	});
 
 	// Inject preset instructions into system prompt
-	pi.on("before_agent_start", async (event) => {
+	api.on("before_agent_start", async (event) => {
 		if (activePreset?.instructions) {
 			return {
 				systemPrompt: `${event.systemPrompt}\n\n${activePreset.instructions}`,
@@ -386,12 +392,12 @@ export default function presetExtension(pi: ExtensionAPI) {
 	});
 
 	// Initialize on session start
-	pi.on("session_start", async (_event, ctx) => {
+	api.on("session_start", async (_event, ctx) => {
 		// Load presets from config files
 		presets = loadPresets(ctx.cwd);
 
 		// Check for --preset flag
-		const presetFlag = pi.getFlag("preset");
+		const presetFlag = api.getFlag("preset");
 		if (typeof presetFlag === "string" && presetFlag) {
 			const preset = presets[presetFlag];
 			if (preset) {
@@ -422,9 +428,9 @@ export default function presetExtension(pi: ExtensionAPI) {
 	});
 
 	// Persist preset state
-	pi.on("turn_start", async () => {
+	api.on("turn_start", async () => {
 		if (activePresetName) {
-			pi.appendEntry("preset-state", { name: activePresetName });
+			api.appendEntry("preset-state", { name: activePresetName });
 		}
 	});
 }

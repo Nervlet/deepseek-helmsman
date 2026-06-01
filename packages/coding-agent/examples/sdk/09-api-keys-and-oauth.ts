@@ -4,10 +4,10 @@
  * Configure API key resolution via AuthStorage and ModelRegistry.
  */
 
-import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@earendil-works/pi-coding-agent";
+import { AuthStorage, createAgentSession, ModelRegistry, SessionManager } from "@deepseek-helmsman/coding-agent";
 
-// Default: AuthStorage uses ~/.pi/agent/auth.json
-// ModelRegistry loads built-in + custom models from ~/.pi/agent/models.json
+// Default: AuthStorage uses ~/.deepseek-helmsman/agent/auth.json
+// ModelRegistry loads built-in + custom models from ~/.deepseek-helmsman/agent/models.json
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
 
@@ -32,7 +32,7 @@ console.log("Session with custom auth storage location");
 customAuthSession.dispose();
 
 // Runtime API key override (not persisted to disk)
-authStorage.setRuntimeApiKey("anthropic", "sk-my-temp-key");
+authStorage.setRuntimeApiKey("deepseek", "sk-my-temp-key");
 const { session: runtimeKeySession } = await createAgentSession({
 	sessionManager: SessionManager.inMemory(),
 	authStorage,

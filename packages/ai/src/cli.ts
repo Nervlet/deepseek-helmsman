@@ -28,7 +28,7 @@ function saveAuth(auth: Record<string, { type: "oauth" } & OAuthCredentials>): v
 async function login(providerId: OAuthProviderId): Promise<void> {
 	const provider = getOAuthProvider(providerId);
 	if (!provider) {
-		console.error(`Unknown provider: ${providerId}`);
+		console.error(`Unknown OAuth credential source: ${providerId}`);
 		process.exit(1);
 	}
 
@@ -77,26 +77,28 @@ async function main(): Promise<void> {
 	const command = args[0];
 
 	if (!command || command === "help" || command === "--help" || command === "-h") {
-		const providerList = PROVIDERS.map((p) => `  ${p.id.padEnd(20)} ${p.name}`).join("\n");
-		console.log(`Usage: npx @earendil-works/pi-ai <command> [provider]
+		const providerList = PROVIDERS.map((p) => `  ${p.id.padEnd(20)} ${p.name}`).join("\n") || "  (none)";
+		console.log(`Usage: npx @deepseek-helmsman/ai <command> [oauth-id]
 
 Commands:
-  login [provider]  Login to an OAuth provider
-  list              List available providers
+  login [oauth-id]  Login to an extension-registered OAuth credential source
+  list              List available OAuth credential sources
 
-Providers:
+OAuth credential sources:
 ${providerList}
 
 Examples:
-  npx @earendil-works/pi-ai login              # interactive provider selection
-  npx @earendil-works/pi-ai login anthropic    # login to specific provider
-  npx @earendil-works/pi-ai list               # list providers
+  npx @deepseek-helmsman/ai list               # list OAuth credential sources
 `);
 		return;
 	}
 
 	if (command === "list") {
-		console.log("Available OAuth providers:\n");
+		console.log("Available OAuth credential sources:\n");
+		if (PROVIDERS.length === 0) {
+			console.log("  (none)");
+			return;
+		}
 		for (const p of PROVIDERS) {
 			console.log(`  ${p.id.padEnd(20)} ${p.name}`);
 		}
@@ -105,10 +107,14 @@ Examples:
 
 	if (command === "login") {
 		let provider = args[1] as OAuthProviderId | undefined;
+		if (PROVIDERS.length === 0) {
+			console.error("No OAuth credential sources are registered. Use DEEPSEEK_API_KEY for DeepSeek.");
+			process.exit(1);
+		}
 
 		if (!provider) {
 			const rl = createInterface({ input: process.stdin, output: process.stdout });
-			console.log("Select a provider:\n");
+			console.log("Select an OAuth credential source:\n");
 			for (let i = 0; i < PROVIDERS.length; i++) {
 				console.log(`  ${i + 1}. ${PROVIDERS[i].name}`);
 			}
@@ -126,8 +132,8 @@ Examples:
 		}
 
 		if (!PROVIDERS.some((p) => p.id === provider)) {
-			console.error(`Unknown provider: ${provider}`);
-			console.error(`Use 'npx @earendil-works/pi-ai list' to see available providers`);
+			console.error(`Unknown OAuth credential source: ${provider}`);
+			console.error(`Use 'npx @deepseek-helmsman/ai list' to see available OAuth credential sources`);
 			process.exit(1);
 		}
 
@@ -137,7 +143,7 @@ Examples:
 	}
 
 	console.error(`Unknown command: ${command}`);
-	console.error(`Use 'npx @earendil-works/pi-ai --help' for usage`);
+	console.error(`Use 'npx @deepseek-helmsman/ai --help' for usage`);
 	process.exit(1);
 }
 

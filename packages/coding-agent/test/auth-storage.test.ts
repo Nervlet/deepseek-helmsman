@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { registerOAuthProvider } from "@earendil-works/pi-ai/oauth";
+import { registerOAuthProvider } from "@deepseek-helmsman/ai/oauth";
 import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -13,7 +13,10 @@ describe("AuthStorage", () => {
 	let authStorage: AuthStorage;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-test-auth-storage-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		tempDir = join(
+			tmpdir(),
+			`deepseek-helmsman-test-auth-storage-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+		);
 		mkdirSync(tempDir, { recursive: true });
 		authJsonPath = join(tempDir, "auth.json");
 	});
@@ -37,77 +40,77 @@ describe("AuthStorage", () => {
 	describe("API key resolution", () => {
 		test("literal API key is returned directly", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "sk-ant-literal-key" },
+				deepseek: { type: "api_key", key: "sk-ant-literal-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("sk-ant-literal-key");
 		});
 
 		test("apiKey with ! prefix executes command and uses stdout", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!echo test-api-key-from-command" },
+				deepseek: { type: "api_key", key: "!echo test-api-key-from-command" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("test-api-key-from-command");
 		});
 
 		test("apiKey with ! prefix trims whitespace from command output", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!echo '  spaced-key  '" },
+				deepseek: { type: "api_key", key: "!echo '  spaced-key  '" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("spaced-key");
 		});
 
 		test("apiKey with ! prefix handles multiline output (uses trimmed result)", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!printf 'line1\\nline2'" },
+				deepseek: { type: "api_key", key: "!printf 'line1\\nline2'" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("line1\nline2");
 		});
 
 		test("apiKey with ! prefix returns undefined on command failure", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!exit 1" },
+				deepseek: { type: "api_key", key: "!exit 1" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBeUndefined();
 		});
 
 		test("apiKey with ! prefix returns undefined on nonexistent command", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!nonexistent-command-12345" },
+				deepseek: { type: "api_key", key: "!nonexistent-command-12345" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBeUndefined();
 		});
 
 		test("apiKey with ! prefix returns undefined on empty output", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!printf ''" },
+				deepseek: { type: "api_key", key: "!printf ''" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBeUndefined();
 		});
@@ -118,11 +121,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: "$TEST_AUTH_API_KEY_12345" },
+					deepseek: { type: "api_key", key: "$TEST_AUTH_API_KEY_12345" },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("anthropic");
+				const apiKey = await authStorage.getApiKey("deepseek");
 
 				expect(apiKey).toBe("env-api-key-value");
 			} finally {
@@ -141,11 +144,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: bracedKey },
+					deepseek: { type: "api_key", key: bracedKey },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("anthropic");
+				const apiKey = await authStorage.getApiKey("deepseek");
 
 				expect(apiKey).toBe("braced-env-api-key-value");
 			} finally {
@@ -170,11 +173,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: interpolatedKey },
+					deepseek: { type: "api_key", key: interpolatedKey },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("anthropic");
+				const apiKey = await authStorage.getApiKey("deepseek");
 
 				expect(apiKey).toBe("left_right");
 			} finally {
@@ -193,11 +196,11 @@ describe("AuthStorage", () => {
 
 		test("apiKey with $$ prefix escapes a leading dollar", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "$$TEST_AUTH_API_KEY_12345" },
+				deepseek: { type: "api_key", key: "$$TEST_AUTH_API_KEY_12345" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("$TEST_AUTH_API_KEY_12345");
 		});
@@ -208,11 +211,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: "$!literal-$TEST_AUTH_API_KEY_12345" },
+					deepseek: { type: "api_key", key: "$!literal-$TEST_AUTH_API_KEY_12345" },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("anthropic");
+				const apiKey = await authStorage.getApiKey("deepseek");
 
 				expect(apiKey).toBe("!literal-env-api-key-value");
 			} finally {
@@ -230,11 +233,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: "TEST_AUTH_API_KEY_12345" },
+					deepseek: { type: "api_key", key: "TEST_AUTH_API_KEY_12345" },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("anthropic");
+				const apiKey = await authStorage.getApiKey("deepseek");
 
 				expect(apiKey).toBe("TEST_AUTH_API_KEY_12345");
 			} finally {
@@ -252,11 +255,11 @@ describe("AuthStorage", () => {
 
 			try {
 				writeAuthJson({
-					opencode: { type: "api_key", key: "public" },
+					"external-entry": { type: "api_key", key: "public" },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("opencode");
+				const apiKey = await authStorage.getApiKey("external-entry");
 
 				expect(apiKey).toBe("public");
 			} finally {
@@ -273,22 +276,22 @@ describe("AuthStorage", () => {
 			delete process.env.literal_api_key_value;
 
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "literal_api_key_value" },
+				deepseek: { type: "api_key", key: "literal_api_key_value" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("literal_api_key_value");
 		});
 
 		test("apiKey command can use shell features like pipes", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!echo 'hello world' | tr ' ' '-'" },
+				deepseek: { type: "api_key", key: "!echo 'hello world' | tr ' ' '-'" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("hello-world");
 		});
@@ -302,15 +305,15 @@ describe("AuthStorage", () => {
 				const counterPath = toShPath(counterFile);
 				const command = `!sh -c 'count=$(cat "${counterPath}"); echo $((count + 1)) > "${counterPath}"; echo "key-value"'`;
 				writeAuthJson({
-					anthropic: { type: "api_key", key: command },
+					deepseek: { type: "api_key", key: command },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
 
 				// Call multiple times
-				await authStorage.getApiKey("anthropic");
-				await authStorage.getApiKey("anthropic");
-				await authStorage.getApiKey("anthropic");
+				await authStorage.getApiKey("deepseek");
+				await authStorage.getApiKey("deepseek");
+				await authStorage.getApiKey("deepseek");
 
 				// Command should have only run once
 				const count = parseInt(readFileSync(counterFile, "utf-8").trim(), 10);
@@ -324,15 +327,15 @@ describe("AuthStorage", () => {
 				const counterPath = toShPath(counterFile);
 				const command = `!sh -c 'count=$(cat "${counterPath}"); echo $((count + 1)) > "${counterPath}"; echo "key-value"'`;
 				writeAuthJson({
-					anthropic: { type: "api_key", key: command },
+					deepseek: { type: "api_key", key: command },
 				});
 
 				// Create multiple AuthStorage instances
 				const storage1 = AuthStorage.create(authJsonPath);
-				await storage1.getApiKey("anthropic");
+				await storage1.getApiKey("deepseek");
 
 				const storage2 = AuthStorage.create(authJsonPath);
-				await storage2.getApiKey("anthropic");
+				await storage2.getApiKey("deepseek");
 
 				// Command should still have only run once
 				const count = parseInt(readFileSync(counterFile, "utf-8").trim(), 10);
@@ -346,15 +349,15 @@ describe("AuthStorage", () => {
 				const counterPath = toShPath(counterFile);
 				const command = `!sh -c 'count=$(cat "${counterPath}"); echo $((count + 1)) > "${counterPath}"; echo "key-value"'`;
 				writeAuthJson({
-					anthropic: { type: "api_key", key: command },
+					deepseek: { type: "api_key", key: command },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				await authStorage.getApiKey("anthropic");
+				await authStorage.getApiKey("deepseek");
 
 				// Clear cache and call again
 				clearConfigValueCache();
-				await authStorage.getApiKey("anthropic");
+				await authStorage.getApiKey("deepseek");
 
 				// Command should have run twice
 				const count = parseInt(readFileSync(counterFile, "utf-8").trim(), 10);
@@ -363,17 +366,17 @@ describe("AuthStorage", () => {
 
 			test("different commands are cached separately", async () => {
 				writeAuthJson({
-					anthropic: { type: "api_key", key: "!echo key-anthropic" },
-					openai: { type: "api_key", key: "!echo key-openai" },
+					deepseek: { type: "api_key", key: "!echo key-deepseek" },
+					"external-entry": { type: "api_key", key: "!echo key-external-entry" },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
 
-				const keyA = await authStorage.getApiKey("anthropic");
-				const keyB = await authStorage.getApiKey("openai");
+				const keyA = await authStorage.getApiKey("deepseek");
+				const keyB = await authStorage.getApiKey("external-entry");
 
-				expect(keyA).toBe("key-anthropic");
-				expect(keyB).toBe("key-openai");
+				expect(keyA).toBe("key-deepseek");
+				expect(keyB).toBe("key-external-entry");
 			});
 
 			test("failed commands are cached (not retried)", async () => {
@@ -383,14 +386,14 @@ describe("AuthStorage", () => {
 				const counterPath = toShPath(counterFile);
 				const command = `!sh -c 'count=$(cat "${counterPath}"); echo $((count + 1)) > "${counterPath}"; exit 1'`;
 				writeAuthJson({
-					anthropic: { type: "api_key", key: command },
+					deepseek: { type: "api_key", key: command },
 				});
 
 				authStorage = AuthStorage.create(authJsonPath);
 
 				// Call multiple times - all should return undefined
-				const key1 = await authStorage.getApiKey("anthropic");
-				const key2 = await authStorage.getApiKey("anthropic");
+				const key1 = await authStorage.getApiKey("deepseek");
+				const key2 = await authStorage.getApiKey("deepseek");
 
 				expect(key1).toBeUndefined();
 				expect(key2).toBeUndefined();
@@ -408,18 +411,18 @@ describe("AuthStorage", () => {
 					process.env[envVarName] = "first-value";
 
 					writeAuthJson({
-						anthropic: { type: "api_key", key: `$${envVarName}` },
+						deepseek: { type: "api_key", key: `$${envVarName}` },
 					});
 
 					authStorage = AuthStorage.create(authJsonPath);
 
-					const key1 = await authStorage.getApiKey("anthropic");
+					const key1 = await authStorage.getApiKey("deepseek");
 					expect(key1).toBe("first-value");
 
 					// Change env var
 					process.env[envVarName] = "second-value";
 
-					const key2 = await authStorage.getApiKey("anthropic");
+					const key2 = await authStorage.getApiKey("deepseek");
 					expect(key2).toBe("second-value");
 				} finally {
 					if (originalEnv === undefined) {
@@ -484,60 +487,60 @@ describe("AuthStorage", () => {
 	describe("persistence semantics", () => {
 		test("set preserves unrelated external edits", () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "old-anthropic" },
-				openai: { type: "api_key", key: "openai-key" },
+				deepseek: { type: "api_key", key: "old-deepseek" },
+				"external-entry": { type: "api_key", key: "external-entry-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
 
 			// Simulate external edit while process is running
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "old-anthropic" },
-				openai: { type: "api_key", key: "openai-key" },
-				google: { type: "api_key", key: "google-key" },
+				deepseek: { type: "api_key", key: "old-deepseek" },
+				"external-entry": { type: "api_key", key: "external-entry-key" },
+				"other-entry": { type: "api_key", key: "other-entry-key" },
 			});
 
-			authStorage.set("anthropic", { type: "api_key", key: "new-anthropic" });
+			authStorage.set("deepseek", { type: "api_key", key: "new-deepseek" });
 
 			const updated = JSON.parse(readFileSync(authJsonPath, "utf-8")) as Record<string, { key: string }>;
-			expect(updated.anthropic.key).toBe("new-anthropic");
-			expect(updated.openai.key).toBe("openai-key");
-			expect(updated.google.key).toBe("google-key");
+			expect(updated.deepseek.key).toBe("new-deepseek");
+			expect(updated["external-entry"].key).toBe("external-entry-key");
+			expect(updated["other-entry"].key).toBe("other-entry-key");
 		});
 
 		test("remove preserves unrelated external edits", () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "anthropic-key" },
-				openai: { type: "api_key", key: "openai-key" },
+				deepseek: { type: "api_key", key: "deepseek-key" },
+				"external-entry": { type: "api_key", key: "external-entry-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
 
 			// Simulate external edit while process is running
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "anthropic-key" },
-				openai: { type: "api_key", key: "openai-key" },
-				google: { type: "api_key", key: "google-key" },
+				deepseek: { type: "api_key", key: "deepseek-key" },
+				"external-entry": { type: "api_key", key: "external-entry-key" },
+				"other-entry": { type: "api_key", key: "other-entry-key" },
 			});
 
-			authStorage.remove("anthropic");
+			authStorage.remove("deepseek");
 
 			const updated = JSON.parse(readFileSync(authJsonPath, "utf-8")) as Record<string, { key: string }>;
-			expect(updated.anthropic).toBeUndefined();
-			expect(updated.openai.key).toBe("openai-key");
-			expect(updated.google.key).toBe("google-key");
+			expect(updated.deepseek).toBeUndefined();
+			expect(updated["external-entry"].key).toBe("external-entry-key");
+			expect(updated["other-entry"].key).toBe("other-entry-key");
 		});
 
 		test("does not overwrite malformed auth file after load error", () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "anthropic-key" },
+				deepseek: { type: "api_key", key: "deepseek-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
 			writeFileSync(authJsonPath, "{invalid-json", "utf-8");
 
 			authStorage.reload();
-			authStorage.set("openai", { type: "api_key", key: "openai-key" });
+			authStorage.set("external-entry", { type: "api_key", key: "external-entry-key" });
 
 			const raw = readFileSync(authJsonPath, "utf-8");
 			expect(raw).toBe("{invalid-json");
@@ -545,7 +548,7 @@ describe("AuthStorage", () => {
 
 		test("reload records parse errors and drainErrors clears buffer", () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "anthropic-key" },
+				deepseek: { type: "api_key", key: "deepseek-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
@@ -554,7 +557,7 @@ describe("AuthStorage", () => {
 			authStorage.reload();
 
 			// Keeps previous in-memory data on reload failure
-			expect(authStorage.get("anthropic")).toEqual({ type: "api_key", key: "anthropic-key" });
+			expect(authStorage.get("deepseek")).toEqual({ type: "api_key", key: "deepseek-key" });
 
 			const firstDrain = authStorage.drainErrors();
 			expect(firstDrain.length).toBeGreaterThan(0);
@@ -568,8 +571,8 @@ describe("AuthStorage", () => {
 	describe("auth status", () => {
 		test("does not expose stored API keys or OAuth tokens", () => {
 			authStorage = AuthStorage.inMemory({
-				anthropic: { type: "api_key", key: "secret-api-key" },
-				openai: {
+				deepseek: { type: "api_key", key: "secret-api-key" },
+				"external-entry": {
 					type: "oauth",
 					access: "secret-access-token",
 					refresh: "secret-refresh-token",
@@ -577,38 +580,38 @@ describe("AuthStorage", () => {
 				},
 			});
 
-			expect(authStorage.getAuthStatus("anthropic")).toEqual({ configured: true, source: "stored" });
-			expect(authStorage.getAuthStatus("openai")).toEqual({ configured: true, source: "stored" });
-			expect(JSON.stringify(authStorage.getAuthStatus("anthropic"))).not.toContain("secret-api-key");
-			expect(JSON.stringify(authStorage.getAuthStatus("openai"))).not.toContain("secret-access-token");
-			expect(JSON.stringify(authStorage.getAuthStatus("openai"))).not.toContain("secret-refresh-token");
+			expect(authStorage.getAuthStatus("deepseek")).toEqual({ configured: true, source: "stored" });
+			expect(authStorage.getAuthStatus("external-entry")).toEqual({ configured: true, source: "stored" });
+			expect(JSON.stringify(authStorage.getAuthStatus("deepseek"))).not.toContain("secret-api-key");
+			expect(JSON.stringify(authStorage.getAuthStatus("external-entry"))).not.toContain("secret-access-token");
+			expect(JSON.stringify(authStorage.getAuthStatus("external-entry"))).not.toContain("secret-refresh-token");
 		});
 	});
 
 	describe("runtime overrides", () => {
 		test("runtime override takes priority over auth.json", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!echo stored-key" },
+				deepseek: { type: "api_key", key: "!echo stored-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			authStorage.setRuntimeApiKey("anthropic", "runtime-key");
+			authStorage.setRuntimeApiKey("deepseek", "runtime-key");
 
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("runtime-key");
 		});
 
 		test("removing runtime override falls back to auth.json", async () => {
 			writeAuthJson({
-				anthropic: { type: "api_key", key: "!echo stored-key" },
+				deepseek: { type: "api_key", key: "!echo stored-key" },
 			});
 
 			authStorage = AuthStorage.create(authJsonPath);
-			authStorage.setRuntimeApiKey("anthropic", "runtime-key");
-			authStorage.removeRuntimeApiKey("anthropic");
+			authStorage.setRuntimeApiKey("deepseek", "runtime-key");
+			authStorage.removeRuntimeApiKey("deepseek");
 
-			const apiKey = await authStorage.getApiKey("anthropic");
+			const apiKey = await authStorage.getApiKey("deepseek");
 
 			expect(apiKey).toBe("stored-key");
 		});

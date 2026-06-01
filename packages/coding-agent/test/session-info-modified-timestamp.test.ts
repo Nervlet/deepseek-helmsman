@@ -24,7 +24,7 @@ function createSessionFile(path: string): void {
 		role: "assistant",
 		content: [{ type: "text", text: "hi" }],
 		api: "openai-completions",
-		provider: "openai",
+		provider: "deepseek",
 		model: "test",
 		usage: {
 			input: 1,
@@ -47,7 +47,7 @@ describe("SessionInfo.modified", () => {
 	});
 
 	it("uses last user/assistant message timestamp instead of file mtime", async () => {
-		const filePath = join(tmpdir(), `pi-session-${Date.now()}-modified.jsonl`);
+		const filePath = join(tmpdir(), `deepseek-helmsman-session-${Date.now()}-modified.jsonl`);
 		createSessionFile(filePath);
 
 		const before = await stat(filePath);
@@ -60,7 +60,7 @@ describe("SessionInfo.modified", () => {
 			role: "assistant",
 			content: [{ type: "text", text: "later" }],
 			api: "openai-completions",
-			provider: "openai",
+			provider: "deepseek",
 			model: "test",
 			usage: {
 				input: 1,

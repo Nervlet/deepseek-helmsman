@@ -5,7 +5,7 @@ import {
 	type Message,
 	type Model,
 	type UserMessage,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import { Type } from "typebox";
 import { describe, expect, it } from "vitest";
 import { agentLoop, agentLoopContinue } from "../src/agent-loop.ts";
@@ -36,12 +36,12 @@ function createUsage() {
 	};
 }
 
-function createModel(): Model<"openai-responses"> {
+function createModel(): Model<"openai-completions"> {
 	return {
 		id: "mock",
 		name: "mock",
-		api: "openai-responses",
-		provider: "openai",
+		api: "openai-completions",
+		provider: "deepseek",
 		baseUrl: "https://example.invalid",
 		reasoning: false,
 		input: ["text"],
@@ -58,8 +58,8 @@ function createAssistantMessage(
 	return {
 		role: "assistant",
 		content,
-		api: "openai-responses",
-		provider: "openai",
+		api: "openai-completions",
+		provider: "deepseek",
 		model: "mock",
 		usage: createUsage(),
 		stopReason,

@@ -2,9 +2,9 @@
  * Extension runner - executes extensions and manages their lifecycle.
  */
 
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { ImageContent, Model } from "@earendil-works/pi-ai";
-import type { KeyId } from "@earendil-works/pi-tui";
+import type { AgentMessage } from "@deepseek-helmsman/agent-core";
+import type { ImageContent, Model } from "@deepseek-helmsman/ai";
+import type { KeyId } from "@deepseek-helmsman/tui";
 import { type Theme, theme } from "../../modes/interactive/theme/theme.ts";
 import type { ResourceDiagnostic } from "../diagnostics.ts";
 import type { KeybindingsConfig } from "../keybindings.ts";
@@ -19,6 +19,7 @@ import type {
 	ContextEvent,
 	ContextEventResult,
 	ContextUsage,
+	DeepSeekProviderName,
 	Extension,
 	ExtensionActions,
 	ExtensionCommandContext,
@@ -267,8 +268,8 @@ export class ExtensionRunner {
 		actions: ExtensionActions,
 		contextActions: ExtensionContextActions,
 		providerActions?: {
-			registerProvider?: (name: string, config: ProviderConfig) => void;
-			unregisterProvider?: (name: string) => void;
+			registerProvider?: (name: DeepSeekProviderName, config: ProviderConfig) => void;
+			unregisterProvider?: (name: DeepSeekProviderName) => void;
 		},
 	): void {
 		// Copy actions into the shared runtime (all extension APIs reference this)
@@ -464,7 +465,7 @@ export class ExtensionRunner {
 	}
 
 	invalidate(
-		message = "This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+		message = "This extension ctx is stale after session replacement or reload. Do not use a captured extension API or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
 	): void {
 		if (!this.staleMessage) {
 			this.staleMessage = message;

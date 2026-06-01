@@ -10,8 +10,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
-import { getModel } from "@earendil-works/pi-ai";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { getModel } from "@deepseek-helmsman/ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession, type AgentSessionEvent } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -29,7 +29,7 @@ describe.skipIf(!API_KEY)("AgentSession compaction e2e", () => {
 
 	beforeEach(() => {
 		// Create temp directory for session files
-		tempDir = join(tmpdir(), `pi-compaction-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-compaction-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 
 		// Track events
@@ -46,7 +46,7 @@ describe.skipIf(!API_KEY)("AgentSession compaction e2e", () => {
 	});
 
 	function createSession(inMemory = false) {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => API_KEY,
 			initialState: {

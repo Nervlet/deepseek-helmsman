@@ -11,9 +11,9 @@
 			"text": "So the current flow in main.ts:\n\n**findInitialModelForSession:**\n1. CLI args (`--provider` + `--model`) → use if both provided\n2. Scoped models (`--models` flag) → use first (unless --continue/--resume)\n3. Settings (`defaultProvider` + `defaultModel`) → use if found\n4. First available model with valid API key\n5. Return null if none\n\n**initialThinking:**\n1. Start with `'off'`\n2. If scoped models (and not continuing) → use first scoped model's thinking level\n3. Else check `settings.defaultThinkingLevel`\n4. CLI `--thinking` overrides\n5. Clamp to model capabilities\n\n---\n\nFor SDK, we don't have CLI args or scoped models. Simplifies to:\n\n**model resolution (if omitted):**\n1. Check `settings.defaultProvider` + `settings.defaultModel` → find it, verify has API key\n2. Else first from `discoverAvailableModels()`\n3. Error if none\n\n**thinkingLevel resolution (if omitted):**\n1. Check `settings.defaultThinkingLevel`\n2. Else `'off'`\n3. Clamp to model capabilities\n\n---\n\nFor `findModel`, current signature returns `{ model, error }`. For SDK, simpler:\n\n```typescript\n// Returns model or null. Throws only if models.json is malformed.\nexport function findModel(provider: string, modelId: string, agentDir?: string): Model<any> | null;\n```\n\nSo the model-related exports:\n\n```typescript\n// All models (built-in + models.json)\nexport function discoverModels(agentDir?: string): Model<any>[];\n\n// Models with valid API keys\nexport function discoverAvailableModels(agentDir?: string): Promise<Model<any>[]>;\n\n// Lookup by provider/id\nexport function findModel(provider: string, modelId: string, agentDir?: string): Model<any> | null;\n```\n\nDoes this address the wonkiness, or is there something else bothering you about it?"
 		}
 	],
-	"api": "anthropic-messages",
-	"provider": "anthropic",
-	"model": "claude-opus-4-5",
+	"api": "openai-completions",
+	"provider":"deepseek",
+	"model":"deepseek-v4-pro",
 	"usage": {
 		"input": 8,
 		"output": 1211,

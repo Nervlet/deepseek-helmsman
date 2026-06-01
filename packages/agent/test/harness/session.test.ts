@@ -25,11 +25,11 @@ async function runSessionSuite(
 		it("tracks model and thinking level changes", async () => {
 			const session = new Session(await createStorage());
 			await session.appendMessage(createUserMessage("one"));
-			await session.appendModelChange("openai", "gpt-4.1");
+			await session.appendModelChange("deepseek", "deepseek-v4-flash");
 			await session.appendThinkingLevelChange("high");
 			const context = await session.buildContext();
 			expect(context.thinkingLevel).toBe("high");
-			expect(context.model).toEqual({ provider: "openai", modelId: "gpt-4.1" });
+			expect(context.model).toEqual({ provider: "deepseek", modelId: "deepseek-v4-flash" });
 		});
 
 		it("supports branching by moving the leaf and appending a new branch", async () => {

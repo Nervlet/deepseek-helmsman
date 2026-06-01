@@ -7,8 +7,8 @@ function createErrorMessage(errorMessage: string): AssistantMessage {
 		role: "assistant",
 		content: [],
 		api: "openai-completions",
-		provider: "ollama",
-		model: "qwen3.5:35b",
+		provider: "deepseek",
+		model: "deepseek-v4-pro",
 		usage: {
 			input: 0,
 			output: 0,
@@ -30,45 +30,44 @@ function createErrorMessage(errorMessage: string): AssistantMessage {
 }
 
 describe("isContextOverflow", () => {
-	it("detects explicit Ollama prompt-too-long errors", () => {
+	it("detects explicit local prompt-too-long errors", () => {
 		const message = createErrorMessage("400 `prompt too long; exceeded max context length by 100918 tokens`");
 		expect(isContextOverflow(message, 32768)).toBe(true);
 	});
 
-	it("detects Together AI context length errors", () => {
+	it("detects compatible endpoint context length errors", () => {
 		const message = createErrorMessage(
 			"400 The input (516368 tokens) is longer than the model's context length (262144 tokens).",
 		);
 		expect(isContextOverflow(message, 262144)).toBe(true);
 	});
 
-	it("detects LiteLLM-wrapped OpenAI maximum context length errors", () => {
+	it("detects LiteLLM-wrapped maximum context length errors", () => {
 		const message = createErrorMessage(
-			"Error: 503 litellm.ServiceUnavailableError: litellm.MidStreamFallbackError: litellm.APIConnectionError: APIConnectionError: OpenAIException - Requested token count exceeds the model's maximum context length of 131072 tokens.",
+			"Error: 503 litellm.ServiceUnavailableError: litellm.MidStreamFallbackError: litellm.APIConnectionError: APIConnectionError: ProviderException - Requested token count exceeds the model's maximum context length of 131072 tokens.",
 		);
 		expect(isContextOverflow(message, 131072)).toBe(true);
 	});
 
-	it("detects OpenRouter Poolside maximum allowed input length errors", () => {
+	it("detects maximum allowed input length errors", () => {
 		const message = createErrorMessage(
 			"Provider returned error: Input length 131393 exceeds the maximum allowed input length of 131040 tokens.",
 		);
 		expect(isContextOverflow(message, 131072)).toBe(true);
 	});
 
-	it("does not treat generic non-overflow Ollama errors as overflow", () => {
+	it("does not treat generic non-overflow local endpoint errors as overflow", () => {
 		const message = createErrorMessage("500 `model runner crashed unexpectedly`");
 		expect(isContextOverflow(message, 32768)).toBe(false);
 	});
 
-	it("does not treat Bedrock throttling 'Too many tokens' as overflow", () => {
-		// Bedrock returns this for HTTP 429 rate limiting, NOT context overflow.
-		// formatBedrockError uses a human-readable prefix for ThrottlingException.
+	it("does not treat provider throttling 'Too many tokens' as overflow", () => {
+		// Some providers return this for HTTP 429 rate limiting, not context overflow.
 		const message = createErrorMessage("Throttling error: Too many tokens, please wait before trying again.");
 		expect(isContextOverflow(message, 200000)).toBe(false);
 	});
 
-	it("does not treat Bedrock service unavailable as overflow", () => {
+	it("does not treat provider service unavailable as overflow", () => {
 		const message = createErrorMessage("Service unavailable: The service is temporarily unavailable.");
 		expect(isContextOverflow(message, 200000)).toBe(false);
 	});
@@ -88,8 +87,8 @@ describe("isContextOverflow", () => {
 			role: "assistant",
 			content: [],
 			api: "openai-completions",
-			provider: "xiaomi",
-			model: "mimo-v2.5-pro",
+			provider: "deepseek",
+			model: "deepseek-v4-pro",
 			usage: {
 				input,
 				output,
@@ -103,7 +102,7 @@ describe("isContextOverflow", () => {
 		};
 	}
 
-	it("detects Xiaomi-style overflow (length stop with zero output and filled context)", () => {
+	it("detects length-stop overflow with zero output and filled context", () => {
 		const message = createLengthStopMessage(58, 1048512, 0);
 		expect(isContextOverflow(message, 1048576)).toBe(true);
 	});

@@ -1,5 +1,5 @@
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { AssistantMessage, Model } from "@earendil-works/pi-ai";
+import type { AgentMessage } from "@deepseek-helmsman/agent-core";
+import type { AssistantMessage, Model } from "@deepseek-helmsman/ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type CompactionPreparation, compact, generateSummary } from "../src/core/compaction/index.ts";
 
@@ -7,21 +7,21 @@ const { completeSimpleMock } = vi.hoisted(() => ({
 	completeSimpleMock: vi.fn(),
 }));
 
-vi.mock("@earendil-works/pi-ai", async (importOriginal) => {
-	const actual = await importOriginal<typeof import("@earendil-works/pi-ai")>();
+vi.mock("@deepseek-helmsman/ai", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@deepseek-helmsman/ai")>();
 	return {
 		...actual,
 		completeSimple: completeSimpleMock,
 	};
 });
 
-function createModel(reasoning: boolean, maxTokens = 8192): Model<"anthropic-messages"> {
+function createModel(reasoning: boolean, maxTokens = 8192): Model<"openai-completions"> {
 	return {
 		id: reasoning ? "reasoning-model" : "non-reasoning-model",
 		name: reasoning ? "Reasoning Model" : "Non-reasoning Model",
-		api: "anthropic-messages",
-		provider: "anthropic",
-		baseUrl: "https://api.anthropic.com",
+		api: "openai-completions",
+		provider: "deepseek",
+		baseUrl: "https://api.deepseek.com",
 		reasoning,
 		input: ["text"],
 		cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
@@ -33,9 +33,9 @@ function createModel(reasoning: boolean, maxTokens = 8192): Model<"anthropic-mes
 const mockSummaryResponse: AssistantMessage = {
 	role: "assistant",
 	content: [{ type: "text", text: "## Goal\nTest summary" }],
-	api: "anthropic-messages",
-	provider: "anthropic",
-	model: "claude-sonnet-4-5",
+	api: "openai-completions",
+	provider: "deepseek",
+	model: "deepseek-v4-pro",
 	usage: {
 		input: 10,
 		output: 10,

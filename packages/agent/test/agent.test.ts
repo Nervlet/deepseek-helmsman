@@ -1,4 +1,4 @@
-import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@earendil-works/pi-ai";
+import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@deepseek-helmsman/ai";
 import { describe, expect, it } from "vitest";
 import { Agent } from "../src/index.ts";
 
@@ -20,8 +20,8 @@ function createAssistantMessage(text: string): AssistantMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
-		api: "openai-responses",
-		provider: "openai",
+		api: "openai-completions",
+		provider: "deepseek",
 		model: "mock",
 		usage: {
 			input: 0,
@@ -64,7 +64,7 @@ describe("Agent", () => {
 	});
 
 	it("should create an agent instance with custom initial state", () => {
-		const customModel = getModel("openai", "gpt-4o-mini");
+		const customModel = getModel("deepseek", "deepseek-v4-flash");
 		const agent = new Agent({
 			initialState: {
 				systemPrompt: "You are a helpful assistant.",
@@ -250,7 +250,7 @@ describe("Agent", () => {
 		expect(agent.state.systemPrompt).toBe("Custom prompt");
 
 		// Test setModel
-		const newModel = getModel("google", "gemini-2.5-flash");
+		const newModel = getModel("deepseek", "deepseek-v4-flash");
 		agent.state.model = newModel;
 		expect(agent.state.model).toBe(newModel);
 

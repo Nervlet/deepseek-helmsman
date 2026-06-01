@@ -1,12 +1,10 @@
 {
-	"name": "pi-monorepo",
+	"name": "deepseek-helmsman-monorepo",
 	"private": true,
 	"type": "module",
 	"workspaces": [
 		"packages/*",
 		"packages/coding-agent/examples/extensions/with-deps",
-		"packages/coding-agent/examples/extensions/custom-provider-anthropic",
-		"packages/coding-agent/examples/extensions/custom-provider-gitlab-duo",
 		"packages/coding-agent/examples/extensions/sandbox"
 	],
 	"scripts": {
@@ -35,7 +33,6 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@anthropic-ai/sandbox-runtime": "0.0.26",
 		"@biomejs/biome": "2.3.5",
 		"@types/node": "22.19.19",
 		"@typescript/native-preview": "7.0.0-dev.20260120.1",

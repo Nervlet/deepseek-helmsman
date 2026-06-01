@@ -1,11 +1,11 @@
 # Settings
 
-Pi uses JSON settings files with project settings overriding global settings.
+DeepSeek Helmsman uses JSON settings files with project settings overriding global settings.
 
 | Location | Scope |
 |----------|-------|
-| `~/.pi/agent/settings.json` | Global (all projects) |
-| `.pi/settings.json` | Project (current directory) |
+| `~/.deepseek-helmsman/agent/settings.json` | Global (all projects) |
+| `.deepseek-helmsman/settings.json` | Project (current directory) |
 
 Edit directly or use `/settings` for common options.
 
@@ -15,7 +15,7 @@ Edit directly or use `/settings` for common options.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `defaultProvider` | string | - | Default provider (e.g., `"anthropic"`, `"openai"`) |
+| `defaultProvider` | string | `"deepseek"` | Default provider. Only `"deepseek"` is built in |
 | `defaultModel` | string | - | Default model ID |
 | `defaultThinkingLevel` | string | - | `"off"`, `"minimal"`, `"low"`, `"medium"`, `"high"`, `"xhigh"` |
 | `hideThinkingBlock` | boolean | `false` | Hide thinking blocks in output |
@@ -50,23 +50,9 @@ Edit directly or use `/settings` for common options.
 
 ### Telemetry and update checks
 
-`enableInstallTelemetry` only controls the anonymous install/update ping to `https://pi.dev/api/report-install`. Opting out of telemetry does not disable update checks; Pi can still fetch `https://pi.dev/api/latest-version` to look for the latest version.
+`enableInstallTelemetry` only controls the anonymous install/update ping configured by `DEEPSEEK_HELMSMAN_TELEMETRY_URL`. Opting out of telemetry does not disable update checks.
 
-Set `PI_SKIP_VERSION_CHECK=1` to disable the Pi version update check. Use `--offline` or `PI_OFFLINE=1` to disable all startup network operations described here, including update checks, package update checks, and install/update telemetry.
-
-### Warnings
-
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `warnings.anthropicExtraUsage` | boolean | `true` | Show a warning when Anthropic subscription auth may use paid extra usage |
-
-```json
-{
-  "warnings": {
-    "anthropicExtraUsage": false
-  }
-}
-```
+Set `DEEPSEEK_HELMSMAN_SKIP_VERSION_CHECK=1` to disable the version update check. Use `--offline` or `DEEPSEEK_HELMSMAN_OFFLINE=1` to disable all startup network operations described here, including update checks, package update checks, and install/update telemetry.
 
 ### Compaction
 
@@ -104,9 +90,9 @@ Set `PI_SKIP_VERSION_CHECK=1` to disable the Pi version update check. Use `--off
 | `retry.provider.maxRetries` | number | `0` | Provider/SDK retry attempts |
 | `retry.provider.maxRetryDelayMs` | number | `60000` | Max server-requested delay before failing (60s) |
 
-When a provider requests a retry delay longer than `retry.provider.maxRetryDelayMs` (e.g., Google's "quota will reset after 5h"), the request fails immediately with an informative error instead of waiting silently. Set to `0` to disable the cap.
+When DeepSeek requests a retry delay longer than `retry.provider.maxRetryDelayMs`, the request fails immediately with an informative error instead of waiting silently. Set to `0` to disable the cap.
 
-Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explicitly needed. Setting it above `0` can make SDK/provider retries handle out-of-usage-limit errors before Pi sees them, which may block the agent until the provider quota resets in some circumstances.
+Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explicitly needed. Setting it above `0` can make SDK/provider retries handle out-of-usage-limit errors before DeepSeek Helmsman sees them, which may block the agent until the provider quota resets in some circumstances.
 
 ```json
 {
@@ -129,9 +115,9 @@ Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explic
 |---------|------|---------|-------------|
 | `steeringMode` | string | `"one-at-a-time"` | How steering messages are sent: `"all"` or `"one-at-a-time"` |
 | `followUpMode` | string | `"one-at-a-time"` | How follow-up messages are sent: `"all"` or `"one-at-a-time"` |
-| `transport` | string | `"auto"` | Preferred transport for providers that support multiple transports: `"sse"`, `"websocket"`, `"websocket-cached"`, or `"auto"` |
-| `httpIdleTimeoutMs` | number | `300000` | HTTP header/body idle timeout in milliseconds, also used by providers with explicit stream idle timeouts. Set to `0` to disable. |
-| `websocketConnectTimeoutMs` | number | `15000` | WebSocket connect/open handshake timeout in milliseconds for providers that support WebSocket transports. Set to `0` to disable. |
+| `transport` | string | `"auto"` | Preferred transport for DeepSeek-compatible endpoints that support multiple transports: `"sse"`, `"websocket"`, `"websocket-cached"`, or `"auto"` |
+| `httpIdleTimeoutMs` | number | `300000` | HTTP header/body idle timeout in milliseconds, also used by endpoints with explicit stream idle timeouts. Set to `0` to disable. |
+| `websocketConnectTimeoutMs` | number | `15000` | WebSocket connect/open handshake timeout in milliseconds for DeepSeek-compatible endpoints that support WebSocket transports. Set to `0` to disable. |
 
 ### Terminal & Images
 
@@ -157,7 +143,7 @@ Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explic
 }
 ```
 
-`npmCommand` is used for all npm package-manager operations, including installs, uninstalls, and dependency installs inside git packages. User-scoped npm packages install under `~/.pi/agent/npm/`; project-scoped npm packages install under `.pi/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid npm-specific flags in wrappers or alternate package managers.
+`npmCommand` is used for all npm package-manager operations, including installs, uninstalls, and dependency installs inside git packages. User-scoped npm packages install under `~/.deepseek-helmsman/agent/npm/`; project-scoped npm packages install under `.deepseek-helmsman/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid npm-specific flags in wrappers or alternate package managers.
 
 ### Sessions
 
@@ -166,10 +152,10 @@ Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explic
 | `sessionDir` | string | - | Directory where session files are stored. Accepts absolute or relative paths, plus `~`. |
 
 ```json
-{ "sessionDir": ".pi/sessions" }
+{ "sessionDir": ".deepseek-helmsman/sessions" }
 ```
 
-When multiple sources specify a session directory, precedence is `--session-dir`, `PI_CODING_AGENT_SESSION_DIR`, then `sessionDir` in settings.json.
+When multiple sources specify a session directory, precedence is `--session-dir`, `DEEPSEEK_HELMSMAN_CODING_AGENT_SESSION_DIR`, then `sessionDir` in settings.json.
 
 ### Model Cycling
 
@@ -179,7 +165,7 @@ When multiple sources specify a session directory, precedence is `--session-dir`
 
 ```json
 {
-  "enabledModels": ["claude-*", "gpt-4o", "gemini-2*"]
+  "enabledModels": ["deepseek-*"]
 }
 ```
 
@@ -193,7 +179,7 @@ When multiple sources specify a session directory, precedence is `--session-dir`
 
 These settings define where to load extensions, skills, prompts, and themes from.
 
-Paths in `~/.pi/agent/settings.json` resolve relative to `~/.pi/agent`. Paths in `.pi/settings.json` resolve relative to `.pi`. Absolute paths and `~` are supported.
+Paths in `~/.deepseek-helmsman/agent/settings.json` resolve relative to `~/.deepseek-helmsman/agent`. Paths in `.deepseek-helmsman/settings.json` resolve relative to `.deepseek-helmsman`. Absolute paths and `~` are supported.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
@@ -212,7 +198,7 @@ String form loads all resources from a package:
 
 ```json
 {
-  "packages": ["pi-skills", "@org/my-extension"]
+  "packages": ["@org/my-extension"]
 }
 ```
 
@@ -222,7 +208,7 @@ Object form filters which resources to load:
 {
   "packages": [
     {
-      "source": "pi-skills",
+      "source": "@org/agent-skills",
       "skills": ["brave-search", "transcribe"],
       "extensions": []
     }
@@ -236,8 +222,8 @@ See [packages.md](packages.md) for package management details.
 
 ```json
 {
-  "defaultProvider": "anthropic",
-  "defaultModel": "claude-sonnet-4-20250514",
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-v4-pro",
   "defaultThinkingLevel": "medium",
   "theme": "dark",
   "compaction": {
@@ -249,26 +235,23 @@ See [packages.md](packages.md) for package management details.
     "enabled": true,
     "maxRetries": 3
   },
-  "enabledModels": ["claude-*", "gpt-4o"],
-  "warnings": {
-    "anthropicExtraUsage": true
-  },
-  "packages": ["pi-skills"]
+  "enabledModels": ["deepseek-*"],
+  "packages": ["@org/agent-skills"]
 }
 ```
 
 ## Project Overrides
 
-Project settings (`.pi/settings.json`) override global settings. Nested objects are merged:
+Project settings (`.deepseek-helmsman/settings.json`) override global settings. Nested objects are merged:
 
 ```json
-// ~/.pi/agent/settings.json (global)
+// ~/.deepseek-helmsman/agent/settings.json (global)
 {
   "theme": "dark",
   "compaction": { "enabled": true, "reserveTokens": 16384 }
 }
 
-// .pi/settings.json (project)
+// .deepseek-helmsman/settings.json (project)
 {
   "compaction": { "reserveTokens": 8192 }
 }

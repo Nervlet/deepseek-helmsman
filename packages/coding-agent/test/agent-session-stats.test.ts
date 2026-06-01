@@ -1,5 +1,5 @@
-import { Agent } from "@earendil-works/pi-agent-core";
-import { type AssistantMessage, getModel, type Usage } from "@earendil-works/pi-ai";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { type AssistantMessage, getModel, type Usage } from "@deepseek-helmsman/ai";
 import { describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -8,7 +8,7 @@ import { SessionManager } from "../src/core/session-manager.ts";
 import { SettingsManager } from "../src/core/settings-manager.ts";
 import { createTestResourceLoader } from "./utilities.ts";
 
-const model = getModel("anthropic", "claude-sonnet-4-5")!;
+const model = getModel("deepseek", "deepseek-v4-pro")!;
 
 function createUsage(totalTokens: number): Usage {
 	return {
@@ -52,7 +52,7 @@ function createSession() {
 	const settingsManager = SettingsManager.inMemory();
 	const sessionManager = SessionManager.inMemory();
 	const authStorage = AuthStorage.inMemory();
-	authStorage.setRuntimeApiKey("anthropic", "test-key");
+	authStorage.setRuntimeApiKey("deepseek", "test-key");
 	const session = new AgentSession({
 		agent: new Agent({
 			getApiKey: () => "test-key",

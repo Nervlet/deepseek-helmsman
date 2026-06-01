@@ -1,5 +1,5 @@
-import type { Model } from "@earendil-works/pi-ai";
-import { completeSimple } from "@earendil-works/pi-ai";
+import type { Model } from "@deepseek-helmsman/ai";
+import { completeSimple } from "@deepseek-helmsman/ai";
 import type { AgentMessage } from "../../types.ts";
 import {
 	convertToLlm,

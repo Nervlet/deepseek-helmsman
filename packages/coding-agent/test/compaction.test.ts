@@ -1,6 +1,6 @@
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
-import type { AssistantMessage, Usage } from "@earendil-works/pi-ai";
-import { getModel } from "@earendil-works/pi-ai";
+import type { AgentMessage } from "@deepseek-helmsman/agent-core";
+import type { AssistantMessage, Usage } from "@deepseek-helmsman/ai";
+import { getModel } from "@deepseek-helmsman/ai";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -60,9 +60,9 @@ function createAssistantMessage(text: string, usage?: Usage): AssistantMessage {
 		usage: usage || createMockUsage(100, 50),
 		stopReason: "stop",
 		timestamp: Date.now(),
-		api: "anthropic-messages",
-		provider: "anthropic",
-		model: "claude-sonnet-4-5",
+		api: "openai-completions",
+		provider: "deepseek",
+		model: "deepseek-v4-pro",
 	};
 }
 
@@ -321,7 +321,7 @@ describe("buildSessionContext", () => {
 		const loaded = buildSessionContext(entries);
 		expect(loaded.messages.length).toBe(4);
 		expect(loaded.thinkingLevel).toBe("off");
-		expect(loaded.model).toEqual({ provider: "anthropic", modelId: "claude-sonnet-4-5" });
+		expect(loaded.model).toEqual({ provider: "deepseek", modelId: "deepseek-v4-pro" });
 	});
 
 	it("should handle single compaction", () => {
@@ -383,14 +383,14 @@ describe("buildSessionContext", () => {
 	it("should track model and thinking level changes", () => {
 		const entries: SessionEntry[] = [
 			createMessageEntry(createUserMessage("1")),
-			createModelChangeEntry("openai", "gpt-4"),
+			createModelChangeEntry("deepseek", "deepseek-v4-flash"),
 			createMessageEntry(createAssistantMessage("a")),
 			createThinkingLevelEntry("high"),
 		];
 
 		const loaded = buildSessionContext(entries);
 		// model_change is later overwritten by assistant message's model info
-		expect(loaded.model).toEqual({ provider: "anthropic", modelId: "claude-sonnet-4-5" });
+		expect(loaded.model).toEqual({ provider: "deepseek", modelId: "deepseek-v4-pro" });
 		expect(loaded.thinkingLevel).toBe("high");
 	});
 });
@@ -495,15 +495,15 @@ describe("Large session fixture", () => {
 // LLM integration tests (skipped without API key)
 // ============================================================================
 
-describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("LLM summarization", () => {
+describe.skipIf(!process.env.DEEPSEEK_API_KEY)("LLM summarization", () => {
 	it("should generate a compaction result for the large session", async () => {
 		const entries = loadLargeSessionEntries();
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 
 		const preparation = prepareCompaction(entries, DEFAULT_COMPACTION_SETTINGS);
 		expect(preparation).toBeDefined();
 
-		const compactionResult = await compact(preparation!, model, process.env.ANTHROPIC_OAUTH_TOKEN!);
+		const compactionResult = await compact(preparation!, model, process.env.DEEPSEEK_API_KEY!);
 
 		expect(compactionResult.summary.length).toBeGreaterThan(100);
 		expect(compactionResult.firstKeptEntryId).toBeTruthy();
@@ -519,12 +519,12 @@ describe.skipIf(!process.env.ANTHROPIC_OAUTH_TOKEN)("LLM summarization", () => {
 	it("should produce valid session after compaction", async () => {
 		const entries = loadLargeSessionEntries();
 		const loaded = buildSessionContext(entries);
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 
 		const preparation = prepareCompaction(entries, DEFAULT_COMPACTION_SETTINGS);
 		expect(preparation).toBeDefined();
 
-		const compactionResult = await compact(preparation!, model, process.env.ANTHROPIC_OAUTH_TOKEN!);
+		const compactionResult = await compact(preparation!, model, process.env.DEEPSEEK_API_KEY!);
 
 		// Simulate appending compaction to entries by creating a proper entry
 		const lastEntry = entries[entries.length - 1];

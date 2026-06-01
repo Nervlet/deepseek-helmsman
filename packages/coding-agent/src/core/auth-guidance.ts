@@ -5,8 +5,7 @@ const UNKNOWN_PROVIDER = "unknown";
 
 export function getProviderLoginHelp(): string {
 	return [
-		"Use /login to log into a provider via OAuth or API key. See:",
-		`  ${join(getDocsPath(), "providers.md")}`,
+		"Set DEEPSEEK_API_KEY or use /login to store a DeepSeek API key. See:",
 		`  ${join(getDocsPath(), "models.md")}`,
 	].join("\n");
 }

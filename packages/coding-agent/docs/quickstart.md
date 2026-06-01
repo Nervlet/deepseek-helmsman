@@ -1,91 +1,79 @@
 # Quickstart
 
-This page gets you from install to a useful first pi session.
+This page gets you from install to a useful first DeepSeek Helmsman session.
 
 ## Install
 
-Pi is distributed as an npm package:
+DeepSeek Helmsman is distributed as an npm package:
 
 ```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
+npm install -g --ignore-scripts @deepseek-helmsman/coding-agent
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. Pi does not require install scripts for normal npm installs.
+`--ignore-scripts` disables dependency lifecycle scripts during install. DeepSeek Helmsman does not require install scripts for normal npm installs.
 
 ### Uninstall
 
-Use the package manager that installed pi. The curl installer uses npm globally, so curl and npm installs are removed with npm:
+Use the package manager that installed DeepSeek Helmsman:
 
 ```bash
-# curl installer or npm install -g
-npm uninstall -g @earendil-works/pi-coding-agent
+# npm install -g
+npm uninstall -g @deepseek-helmsman/coding-agent
 
 # pnpm
-pnpm remove -g @earendil-works/pi-coding-agent
+pnpm remove -g @deepseek-helmsman/coding-agent
 
 # Yarn
-yarn global remove @earendil-works/pi-coding-agent
+yarn global remove @deepseek-helmsman/coding-agent
 
 # Bun
-bun uninstall -g @earendil-works/pi-coding-agent
+bun uninstall -g @deepseek-helmsman/coding-agent
 ```
 
-Uninstalling pi leaves settings, credentials, sessions, and installed pi packages in `~/.pi/agent/`.
+Uninstalling the CLI leaves settings, credentials, sessions, and installed packages in `~/.deepseek-helmsman/agent/`.
 
-Then start pi in the project directory you want it to work on:
+Then start DeepSeek Helmsman in the project directory you want it to work on:
 
 ```bash
 cd /path/to/project
-pi
+deepseek-helmsman
 ```
 
 ## Authenticate
 
-Pi can use subscription providers through `/login`, or API-key providers through environment variables or the auth file.
+DeepSeek Helmsman uses DeepSeek API-key authentication.
 
-### Option 1: subscription login
-
-Start pi and run:
-
-```text
-/login
-```
-
-Then select a provider. Built-in subscription logins include Claude Pro/Max, ChatGPT Plus/Pro (Codex), and GitHub Copilot.
-
-### Option 2: API key
-
-Set an API key before launching pi:
+Set an API key before launching:
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-pi
+export DEEPSEEK_API_KEY=sk-...
+deepseek-helmsman
 ```
 
-You can also run `/login` and select an API-key provider to store the key in `~/.pi/agent/auth.json`.
+You can also run `/login` and select DeepSeek to store the key in `~/.deepseek-helmsman/agent/auth.json`.
 
-See [Providers](providers.md) for all supported providers, environment variables, and cloud-provider setup.
+See [Providers](providers.md) for authentication details.
 
 ## First session
 
-Once pi starts, type a request and press Enter:
+Once DeepSeek Helmsman starts, type a request and press Enter:
 
 ```text
 Summarize this repository and tell me how to run its checks.
 ```
 
-By default, pi gives the model four tools:
+By default, DeepSeek Helmsman gives the model four tools:
 
 - `read` - read files
 - `write` - create or overwrite files
 - `edit` - patch files
 - `bash` - run shell commands
 
-Additional built-in read-only tools (`grep`, `find`, `ls`) are available through tool options. Pi runs in your current working directory and can modify files there. Use git or another checkpointing workflow if you want easy rollback.
+Additional built-in read-only tools (`grep`, `find`, `ls`) are available through tool options. DeepSeek Helmsman runs in your current working directory and can modify files there. Use git or another checkpointing workflow if you want easy rollback.
 
-## Give pi project instructions
+## Give DeepSeek Helmsman project instructions
 
-Pi loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
+DeepSeek Helmsman loads context files at startup. Add an `AGENTS.md` file to tell it how to work in a project:
 
 ```markdown
 # Project Instructions
@@ -95,12 +83,12 @@ Pi loads context files at startup. Add an `AGENTS.md` file to tell it how to wor
 - Keep responses concise.
 ```
 
-Pi loads:
+DeepSeek Helmsman loads:
 
-- `~/.pi/agent/AGENTS.md` for global instructions
+- `~/.deepseek-helmsman/agent/AGENTS.md` for global instructions
 - `AGENTS.md` or `CLAUDE.md` from parent directories and the current directory
 
-Restart pi, or run `/reload`, after changing context files.
+Restart the agent, or run `/reload`, after changing context files.
 
 ## Common things to try
 
@@ -109,8 +97,8 @@ Restart pi, or run `/reload`, after changing context files.
 Type `@` in the editor to fuzzy-search files, or pass files on the command line:
 
 ```bash
-pi @README.md "Summarize this"
-pi @src/app.ts @src/app.test.ts "Review these together"
+deepseek-helmsman @README.md "Summarize this"
+deepseek-helmsman @src/app.ts @src/app.test.ts "Review these together"
 ```
 
 Images can be pasted with Ctrl+V (Alt+V on Windows) or dragged into supported terminals.
@@ -134,32 +122,32 @@ Use `/model` or Ctrl+L to choose a model. Use Shift+Tab to cycle thinking level.
 Sessions are saved automatically:
 
 ```bash
-pi -c                  # Continue most recent session
-pi -r                  # Browse previous sessions
-pi --name "my task"    # Set session display name at startup
-pi --session <path|id> # Open a specific session
+deepseek-helmsman -c                  # Continue most recent session
+deepseek-helmsman -r                  # Browse previous sessions
+deepseek-helmsman --name "my task"    # Set session display name at startup
+deepseek-helmsman --session <path|id> # Open a specific session
 ```
 
-Inside pi, use `/resume`, `/new`, `/tree`, `/fork`, and `/clone` to manage sessions.
+Inside DeepSeek Helmsman, use `/resume`, `/new`, `/tree`, `/fork`, and `/clone` to manage sessions.
 
 ### Non-interactive mode
 
 For one-shot prompts:
 
 ```bash
-pi -p "Summarize this codebase"
-cat README.md | pi -p "Summarize this text"
-pi -p @screenshot.png "What's in this image?"
+deepseek-helmsman -p "Summarize this codebase"
+cat README.md | deepseek-helmsman -p "Summarize this text"
+deepseek-helmsman -p @screenshot.png "What's in this image?"
 ```
 
 Use `--mode json` for JSON event output or `--mode rpc` for process integration.
 
 ## Next steps
 
-- [Using Pi](usage.md) - interactive mode, slash commands, sessions, context files, and CLI reference.
-- [Providers](providers.md) - authentication and model setup.
+- [Using DeepSeek Helmsman](usage.md) - interactive mode, slash commands, sessions, context files, and CLI reference.
+- [Providers](providers.md) - DeepSeek authentication and model setup.
 - [Settings](settings.md) - global and project configuration.
 - [Keybindings](keybindings.md) - shortcuts and customization.
-- [Pi Packages](packages.md) - install shared extensions, skills, prompts, and themes.
+- [Packages](packages.md) - install shared extensions, skills, prompts, and themes.
 
 Platform notes: [Windows](windows.md), [Termux](termux.md), [tmux](tmux.md), [Terminal setup](terminal-setup.md), [Shell aliases](shell-aliases.md).

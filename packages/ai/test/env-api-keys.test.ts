@@ -1,46 +1,26 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { findEnvKeys, getEnvApiKey } from "../src/env-api-keys.ts";
 
-const originalCopilotGitHubToken = process.env.COPILOT_GITHUB_TOKEN;
-const originalGhToken = process.env.GH_TOKEN;
-const originalGitHubToken = process.env.GITHUB_TOKEN;
+const originalDeepSeekApiKey = process.env.DEEPSEEK_API_KEY;
 
 afterEach(() => {
-	if (originalCopilotGitHubToken === undefined) {
-		delete process.env.COPILOT_GITHUB_TOKEN;
+	if (originalDeepSeekApiKey === undefined) {
+		delete process.env.DEEPSEEK_API_KEY;
 	} else {
-		process.env.COPILOT_GITHUB_TOKEN = originalCopilotGitHubToken;
-	}
-
-	if (originalGhToken === undefined) {
-		delete process.env.GH_TOKEN;
-	} else {
-		process.env.GH_TOKEN = originalGhToken;
-	}
-
-	if (originalGitHubToken === undefined) {
-		delete process.env.GITHUB_TOKEN;
-	} else {
-		process.env.GITHUB_TOKEN = originalGitHubToken;
+		process.env.DEEPSEEK_API_KEY = originalDeepSeekApiKey;
 	}
 });
 
 describe("environment API keys", () => {
-	it("does not treat generic GitHub tokens as GitHub Copilot credentials", () => {
-		delete process.env.COPILOT_GITHUB_TOKEN;
-		process.env.GH_TOKEN = "gh-token";
-		process.env.GITHUB_TOKEN = "github-token";
+	it("resolves DeepSeek credentials from DEEPSEEK_API_KEY", () => {
+		process.env.DEEPSEEK_API_KEY = "deepseek-token";
 
-		expect(findEnvKeys("github-copilot")).toBeUndefined();
-		expect(getEnvApiKey("github-copilot")).toBeUndefined();
+		expect(findEnvKeys("deepseek")).toEqual(["DEEPSEEK_API_KEY"]);
+		expect(getEnvApiKey("deepseek")).toBe("deepseek-token");
 	});
 
-	it("resolves GitHub Copilot credentials from COPILOT_GITHUB_TOKEN", () => {
-		process.env.COPILOT_GITHUB_TOKEN = "copilot-token";
-		process.env.GH_TOKEN = "gh-token";
-		process.env.GITHUB_TOKEN = "github-token";
-
-		expect(findEnvKeys("github-copilot")).toEqual(["COPILOT_GITHUB_TOKEN"]);
-		expect(getEnvApiKey("github-copilot")).toBe("copilot-token");
+	it("does not define keys for non-DeepSeek providers", () => {
+		expect(findEnvKeys("openai")).toBeUndefined();
+		expect(getEnvApiKey("openai")).toBeUndefined();
 	});
 });

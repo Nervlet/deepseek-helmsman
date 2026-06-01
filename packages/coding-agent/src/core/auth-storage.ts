@@ -2,7 +2,7 @@
  * Credential storage for API keys and OAuth tokens.
  * Handles loading, saving, and refreshing credentials from auth.json.
  *
- * Uses file locking to prevent race conditions when multiple pi instances
+ * Uses file locking to prevent race conditions when multiple DeepSeek Helmsman instances
  * try to refresh tokens simultaneously.
  */
 
@@ -12,8 +12,8 @@ import {
 	type OAuthCredentials,
 	type OAuthLoginCallbacks,
 	type OAuthProviderId,
-} from "@earendil-works/pi-ai";
-import { getOAuthApiKey, getOAuthProvider, getOAuthProviders } from "@earendil-works/pi-ai/oauth";
+} from "@deepseek-helmsman/ai";
+import { getOAuthApiKey, getOAuthProvider, getOAuthProviders } from "@deepseek-helmsman/ai/oauth";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import lockfile from "proper-lockfile";
@@ -237,7 +237,7 @@ export class AuthStorage {
 
 	/**
 	 * Set a fallback resolver for API keys not found in auth.json or env vars.
-	 * Used for custom provider keys from models.json.
+	 * Used for DeepSeek provider keys from models.json.
 	 */
 	setFallbackResolver(resolver: (provider: string) => string | undefined): void {
 		this.fallbackResolver = resolver;
@@ -361,7 +361,7 @@ export class AuthStorage {
 		}
 
 		if (this.fallbackResolver?.(provider)) {
-			return { configured: false, source: "fallback", label: "custom provider config" };
+			return { configured: false, source: "fallback", label: "models.json provider config" };
 		}
 
 		return { configured: false };
@@ -402,7 +402,7 @@ export class AuthStorage {
 
 	/**
 	 * Refresh OAuth token with backend locking to prevent race conditions.
-	 * Multiple pi instances may try to refresh simultaneously when tokens expire.
+	 * Multiple DeepSeek Helmsman instances may try to refresh simultaneously when tokens expire.
 	 */
 	private async refreshOAuthTokenWithLock(
 		providerId: OAuthProviderId,
@@ -457,7 +457,7 @@ export class AuthStorage {
 	 * 2. API key from auth.json
 	 * 3. OAuth token from auth.json (auto-refreshed with locking)
 	 * 4. Environment variable
-	 * 5. Fallback resolver (models.json custom providers)
+	 * 5. Fallback resolver (models.json provider config)
 	 */
 	async getApiKey(providerId: string, options?: { includeFallback?: boolean }): Promise<string | undefined> {
 		// Runtime override takes highest priority
@@ -514,7 +514,7 @@ export class AuthStorage {
 		const envKey = getEnvApiKey(providerId);
 		if (envKey) return envKey;
 
-		// Fall back to custom resolver (e.g., models.json custom providers)
+		// Fall back to custom resolver (e.g., models.json provider config)
 		if (options?.includeFallback !== false) {
 			return this.fallbackResolver?.(providerId) ?? undefined;
 		}

@@ -6,28 +6,27 @@
  * 1. Summarizes ALL messages (messagesToSummarize + turnPrefixMessages)
  * 2. Discards all old turns completely, keeping only the summary
  *
- * This example also demonstrates using a different model (Gemini Flash) for summarization,
- * which can be cheaper/faster than the main conversation model.
+ * This example also demonstrates using a fast DeepSeek model for summarization.
  *
  * Usage:
- *   pi --extension examples/extensions/custom-compaction.ts
+ *   deepseek-helmsman --extension examples/extensions/custom-compaction.ts
  */
 
-import { complete } from "@earendil-works/pi-ai";
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
-import { convertToLlm, serializeConversation } from "@earendil-works/pi-coding-agent";
+import { complete } from "@deepseek-helmsman/ai";
+import type { ExtensionAPI } from "@deepseek-helmsman/coding-agent";
+import { convertToLlm, serializeConversation } from "@deepseek-helmsman/coding-agent";
 
-export default function (pi: ExtensionAPI) {
-	pi.on("session_before_compact", async (event, ctx) => {
+export default function (api: ExtensionAPI) {
+	api.on("session_before_compact", async (event, ctx) => {
 		ctx.ui.notify("Custom compaction extension triggered", "info");
 
 		const { preparation, branchEntries: _, signal } = event;
 		const { messagesToSummarize, turnPrefixMessages, tokensBefore, firstKeptEntryId, previousSummary } = preparation;
 
-		// Use Gemini Flash for summarization (cheaper/faster than most conversation models)
-		const model = ctx.modelRegistry.find("google", "gemini-2.5-flash");
+		// Use the fast DeepSeek model for summarization.
+		const model = ctx.modelRegistry.find("deepseek", "deepseek-v4-flash");
 		if (!model) {
-			ctx.ui.notify(`Could not find Gemini Flash model, using default compaction`, "warning");
+			ctx.ui.notify(`Could not find DeepSeek V4 Flash model, using default compaction`, "warning");
 			return;
 		}
 

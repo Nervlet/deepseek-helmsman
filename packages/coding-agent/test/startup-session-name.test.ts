@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 function createTempDir(): string {
-	const dir = mkdtempSync(join(tmpdir(), "pi-startup-session-name-"));
+	const dir = mkdtempSync(join(tmpdir(), "deepseek-helmsman-startup-session-name-"));
 	tempDirs.push(dir);
 	return dir;
 }
@@ -45,8 +45,8 @@ function createSessionFile(projectDir: string, sessionFile: string): void {
 				message: {
 					role: "assistant",
 					content: [{ type: "text", text: "hello" }],
-					provider: "anthropic",
-					model: "claude-sonnet-4-5",
+					provider: "deepseek",
+					model: "deepseek-v4-pro",
 					timestamp: Date.now(),
 				},
 			},
@@ -70,7 +70,7 @@ async function runCli(args: string[], dirs: CliDirs): Promise<CliResult> {
 		env: {
 			...process.env,
 			[ENV_AGENT_DIR]: dirs.agentDir,
-			PI_OFFLINE: "1",
+			DEEPSEEK_HELMSMAN_OFFLINE: "1",
 			TSX_TSCONFIG_PATH: resolve(__dirname, "../../../tsconfig.json"),
 		},
 		stdio: ["ignore", "ignore", "pipe"],

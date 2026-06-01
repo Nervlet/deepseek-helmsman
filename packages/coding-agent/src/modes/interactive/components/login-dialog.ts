@@ -1,5 +1,5 @@
-import { getOAuthProviders, type OAuthDeviceCodeInfo } from "@earendil-works/pi-ai/oauth";
-import { Container, type Focusable, getKeybindings, Input, Spacer, Text, type TUI } from "@earendil-works/pi-tui";
+import { getOAuthProviders, type OAuthDeviceCodeInfo } from "@deepseek-helmsman/ai/oauth";
+import { Container, type Focusable, getKeybindings, Input, Spacer, Text, type TUI } from "@deepseek-helmsman/tui";
 import { exec } from "child_process";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
@@ -192,7 +192,7 @@ export class LoginDialogComponent extends Container implements Focusable {
 	}
 
 	/**
-	 * Show waiting message (for polling flows like GitHub Copilot)
+	 * Show a waiting message for polling credential flows.
 	 */
 	showWaiting(message: string): void {
 		this.contentContainer.addChild(new Spacer(1));

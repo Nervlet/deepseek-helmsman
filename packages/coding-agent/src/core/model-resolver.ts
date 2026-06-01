@@ -2,48 +2,17 @@
  * Model resolution, scoping, and initial selection
  */
 
-import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
-import { type Api, type KnownProvider, type Model, modelsAreEqual } from "@earendil-works/pi-ai";
+import type { ThinkingLevel } from "@deepseek-helmsman/agent-core";
+import { type Api, type KnownProvider, type Model, modelsAreEqual } from "@deepseek-helmsman/ai";
 import chalk from "chalk";
 import { minimatch } from "minimatch";
 import { isValidThinkingLevel } from "../cli/args.ts";
 import { DEFAULT_THINKING_LEVEL } from "./defaults.ts";
 import type { ModelRegistry } from "./model-registry.ts";
 
-/** Default model IDs for each known provider */
+/** Default model IDs for each supported provider. */
 export const defaultModelPerProvider: Record<KnownProvider, string> = {
-	"amazon-bedrock": "us.anthropic.claude-opus-4-6-v1",
-	anthropic: "claude-opus-4-8",
-	openai: "gpt-5.4",
-	"azure-openai-responses": "gpt-5.4",
-	"openai-codex": "gpt-5.5",
 	deepseek: "deepseek-v4-pro",
-	google: "gemini-3.1-pro-preview",
-	"google-vertex": "gemini-3.1-pro-preview",
-	"github-copilot": "gpt-5.4",
-	openrouter: "moonshotai/kimi-k2.6",
-	"vercel-ai-gateway": "zai/glm-5.1",
-	xai: "grok-4.20-0309-reasoning",
-	groq: "openai/gpt-oss-120b",
-	cerebras: "zai-glm-4.7",
-	zai: "glm-5.1",
-	mistral: "devstral-medium-latest",
-	minimax: "MiniMax-M2.7",
-	"minimax-cn": "MiniMax-M2.7",
-	moonshotai: "kimi-k2.6",
-	"moonshotai-cn": "kimi-k2.6",
-	huggingface: "moonshotai/Kimi-K2.6",
-	fireworks: "accounts/fireworks/models/kimi-k2p6",
-	together: "moonshotai/Kimi-K2.6",
-	opencode: "kimi-k2.6",
-	"opencode-go": "kimi-k2.6",
-	"kimi-coding": "kimi-for-coding",
-	"cloudflare-workers-ai": "@cf/moonshotai/kimi-k2.6",
-	"cloudflare-ai-gateway": "workers-ai/@cf/moonshotai/kimi-k2.6",
-	xiaomi: "mimo-v2.5-pro",
-	"xiaomi-token-plan-cn": "mimo-v2.5-pro",
-	"xiaomi-token-plan-ams": "mimo-v2.5-pro",
-	"xiaomi-token-plan-sgp": "mimo-v2.5-pro",
 };
 
 export interface ScopedModel {
@@ -67,8 +36,7 @@ function isAlias(id: string): boolean {
 
 /**
  * Find an exact model reference match.
- * Supports either a bare model id or a canonical provider/modelId reference.
- * When matching by bare id, ambiguous matches across providers are rejected.
+ * Supports either a bare model id or the canonical deepseek/modelId reference.
  */
 export function findExactModelReferenceMatch(
 	modelReference: string,
@@ -175,7 +143,7 @@ function buildFallbackModel(provider: string, modelId: string, availableModels: 
 
 /**
  * Parse a pattern to extract model and thinking level.
- * Handles models with colons in their IDs (e.g., OpenRouter's :exacto suffix).
+ * Handles models with colons in their IDs.
  *
  * Algorithm:
  * 1. Try to match full pattern as a model
@@ -245,10 +213,10 @@ export function parseModelPattern(
  * Resolve model patterns to actual Model objects with optional thinking levels
  * Format: "pattern:level" where :level is optional
  * For each pattern, finds all matching models and picks the best version:
- * 1. Prefer alias (e.g., claude-sonnet-4-5) over dated versions (claude-sonnet-4-5-20250929)
+ * 1. Prefer alias IDs over dated versions
  * 2. If no alias, pick the latest dated version
  *
- * Supports models with colons in their IDs (e.g., OpenRouter's model:exacto).
+ * Supports models with colons in their IDs.
  * The algorithm tries to match the full pattern first, then progressively
  * strips colon-suffixes to find a match.
  */
@@ -272,8 +240,7 @@ export async function resolveModelScope(patterns: string[], modelRegistry: Model
 				}
 			}
 
-			// Match against "provider/modelId" format OR just model ID
-			// This allows "*sonnet*" to match without requiring "anthropic/*sonnet*"
+			// Match against "provider/modelId" format OR just model ID.
 			const matchingModels = availableModels.filter((m) => {
 				const fullId = `${m.provider}/${m.id}`;
 				return minimatch(fullId, globPattern, { nocase: true }) || minimatch(m.id, globPattern, { nocase: true });
@@ -327,8 +294,8 @@ export interface ResolveCliModelResult {
  * Resolve a single model from CLI flags.
  *
  * Supports:
- * - --provider <provider> --model <pattern>
- * - --model <provider>/<pattern>
+ * - --provider deepseek --model <pattern>
+ * - --model deepseek/<pattern>
  * - Fuzzy matching (same rules as model scoping: exact id, then partial id/name)
  *
  * Note: This does not apply the thinking level by itself, but it may *parse* and
@@ -356,10 +323,18 @@ export function resolveCliModel(options: {
 		};
 	}
 
-	// Build canonical provider lookup (case-insensitive)
+	// Build canonical provider lookup (case-insensitive).
 	const providerMap = new Map<string, string>();
 	for (const m of availableModels) {
 		providerMap.set(m.provider.toLowerCase(), m.provider);
+	}
+
+	if (cliProvider && cliProvider.toLowerCase() !== "deepseek") {
+		return {
+			model: undefined,
+			warning: undefined,
+			error: `Unknown provider "${cliProvider}". DeepSeek Helmsman only supports provider "deepseek".`,
+		};
 	}
 
 	let provider = cliProvider ? providerMap.get(cliProvider.toLowerCase()) : undefined;
@@ -367,15 +342,13 @@ export function resolveCliModel(options: {
 		return {
 			model: undefined,
 			warning: undefined,
-			error: `Unknown provider "${cliProvider}". Use --list-models to see available providers/models.`,
+			error: `Unknown provider "${cliProvider}". DeepSeek Helmsman only supports provider "deepseek".`,
 		};
 	}
 
 	// If no explicit --provider, try to interpret "provider/model" format first.
-	// When the prefix before the first slash matches a known provider, prefer that
-	// interpretation over matching models whose IDs literally contain slashes
-	// (e.g. "zai/glm-5" should resolve to provider=zai, model=glm-5, not to a
-	// vercel-ai-gateway model with id "zai/glm-5").
+	// When the prefix before the first slash matches a known provider, prefer
+	// that interpretation over matching models whose IDs literally contain slashes.
 	let pattern = cliModel;
 	let inferredProvider = false;
 
@@ -393,7 +366,7 @@ export function resolveCliModel(options: {
 	}
 
 	// If no provider was inferred from the slash, try exact matches without provider inference.
-	// This handles models whose IDs naturally contain slashes (e.g. OpenRouter-style IDs).
+	// This handles custom model IDs that naturally contain slashes.
 	if (!provider) {
 		const lower = cliModel.toLowerCase();
 		const exact = availableModels.find(
@@ -405,7 +378,7 @@ export function resolveCliModel(options: {
 	}
 
 	if (cliProvider && provider) {
-		// If both were provided, tolerate --model <provider>/<pattern> by stripping the provider prefix
+		// If both were provided, tolerate --model deepseek/<pattern> by stripping the provider prefix.
 		const prefix = `${provider}/`;
 		if (cliModel.toLowerCase().startsWith(prefix.toLowerCase())) {
 			pattern = cliModel.substring(prefix.length);
@@ -423,8 +396,7 @@ export function resolveCliModel(options: {
 
 	// If we inferred a provider from the slash but found no match within that provider,
 	// fall back to matching the full input as a raw model id across all models.
-	// This handles OpenRouter-style IDs like "openai/gpt-4o:extended" where "openai"
-	// looks like a provider but the full string is actually a model id on openrouter.
+	// This handles model IDs where the first path segment looks like a provider.
 	if (inferredProvider) {
 		const lower = cliModel.toLowerCase();
 		const exact = availableModels.find(

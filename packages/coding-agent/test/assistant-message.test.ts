@@ -1,4 +1,4 @@
-import type { AssistantMessage } from "@earendil-works/pi-ai";
+import type { AssistantMessage } from "@deepseek-helmsman/ai";
 import { describe, expect, test } from "vitest";
 import { AssistantMessageComponent } from "../src/modes/interactive/components/assistant-message.ts";
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
@@ -11,9 +11,9 @@ function createAssistantMessage(content: AssistantMessage["content"]): Assistant
 	return {
 		role: "assistant",
 		content,
-		api: "openai-responses",
-		provider: "openai",
-		model: "gpt-4o-mini",
+		api: "openai-completions",
+		provider: "deepseek",
+		model: "deepseek-v4-flash",
 		usage: {
 			input: 0,
 			output: 0,

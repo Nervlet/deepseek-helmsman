@@ -6,9 +6,9 @@ import { homedir } from "node:os";
 import path from "node:path";
 import { createInterface } from "node:readline";
 
-const DEFAULT_SESSIONS_DIR = path.join(homedir(), ".pi/agent/sessions");
+const DEFAULT_SESSIONS_DIR = path.join(homedir(), ".deepseek-helmsman/agent/sessions");
 const MODELS_GENERATED_PATH = path.join(process.cwd(), "packages/ai/src/models.generated.ts");
-const MODELS_CONFIG_PATH = path.join(homedir(), ".pi/agent/models.json");
+const MODELS_CONFIG_PATH = path.join(homedir(), ".deepseek-helmsman/agent/models.json");
 const REPORT_TIME_ZONE = "Europe/Berlin";
 const CHART_WIDTH = 40;
 
@@ -37,9 +37,9 @@ function printHelp() {
 	console.log(`Usage: node scripts/session-context-stats.mjs [options]
 
 Options:
-  --sessions-dir <path>  Sessions directory (default: ~/.pi/agent/sessions)
+  --sessions-dir <path>  Sessions directory (default: ~/.deepseek-helmsman/agent/sessions)
   --model <substring>    Filter provider/model by substring
-  --model-prefix <p>     Include provider/model prefixes, repeatable, e.g. openai-codex/
+  --model-prefix <p>     Include provider/model prefixes, repeatable, e.g. deepseek/
   --bash-contains <text> Include only sessions with bash tool calls containing text, repeatable
   --git-commit-or-push   Shortcut for --bash-contains "git commit" --bash-contains "git push"
   --cwd <path>           Include only sessions whose cwd is this path (default: current cwd)

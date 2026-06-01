@@ -5,7 +5,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
+import { Agent } from "@deepseek-helmsman/agent-core";
 import {
 	type AssistantMessage,
 	type AssistantMessageEvent,
@@ -13,7 +13,7 @@ import {
 	getModel,
 	type ImageContent,
 	type TextContent,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
@@ -42,8 +42,8 @@ function createAssistantMessage(text: string): AssistantMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
-		api: "anthropic-messages",
-		provider: "anthropic",
+		api: "openai-completions",
+		provider: "deepseek",
 		model: "mock",
 		usage: {
 			input: 0,
@@ -63,7 +63,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-concurrent-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-concurrent-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 	});
 
@@ -79,7 +79,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	function createSession() {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		let abortSignal: AbortSignal | undefined;
 
 		// Use a stream function that responds to abort
@@ -113,7 +113,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
 		// Set a runtime API key so validation passes
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 
 		session = new AgentSession({
 			agent,
@@ -182,7 +182,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should queue extension-origin steering messages while streaming", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		let abortSignal: AbortSignal | undefined;
 		let sawSteeringMessage = false;
 		let lastInputSource: string | undefined;
@@ -237,14 +237,14 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 
 		const extensionsResult = await createTestExtensionsResult([
-			(pi) => {
-				(globalThis as typeof globalThis & { testExtensionApi?: unknown }).testExtensionApi = pi;
+			(extensionApi) => {
+				(globalThis as typeof globalThis & { testExtensionApi?: unknown }).testExtensionApi = extensionApi;
 			},
-			(pi) => {
-				pi.on("input", async (event) => {
+			(extensionApi) => {
+				extensionApi.on("input", async (event) => {
 					lastInputSource = event.source;
 				});
 			},
@@ -268,16 +268,16 @@ describe("AgentSession concurrent prompt guard", () => {
 		await new Promise((resolve) => setTimeout(resolve, 10));
 		expect(session.isStreaming).toBe(true);
 
-		const pi = (
+		const extensionApi = (
 			globalThis as typeof globalThis & {
 				testExtensionApi?: {
 					sendUserMessage: (content: string, options?: { deliverAs?: "steer" | "followUp" }) => void;
 				};
 			}
 		).testExtensionApi;
-		expect(pi).toBeDefined();
+		expect(extensionApi).toBeDefined();
 
-		pi!.sendUserMessage("Steer from extension", { deliverAs: "steer" });
+		extensionApi!.sendUserMessage("Steer from extension", { deliverAs: "steer" });
 		await new Promise((resolve) => setTimeout(resolve, 25));
 
 		expect(session.pendingMessageCount).toBe(1);
@@ -293,7 +293,7 @@ describe("AgentSession concurrent prompt guard", () => {
 
 	it("should allow prompt() after previous completes", async () => {
 		// Create session with a stream that completes immediately
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: {
@@ -315,7 +315,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 
 		session = new AgentSession({
 			agent,
@@ -337,7 +337,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should wait for queued agent events before emitting tool_call", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const tool = {
 			name: "dummy",
 			description: "Dummy tool",
@@ -370,8 +370,8 @@ describe("AgentSession concurrent prompt guard", () => {
 						const message: AssistantMessage = {
 							role: "assistant",
 							content: [{ type: "text", text: "done" }],
-							api: "anthropic-messages",
-							provider: "anthropic",
+							api: "openai-completions",
+							provider: "deepseek",
 							model: "mock",
 							usage: {
 								input: 1,
@@ -395,8 +395,8 @@ describe("AgentSession concurrent prompt guard", () => {
 							{ type: "toolCall", id: "toolu_1", name: "dummy", arguments: { q: "x" } },
 							{ type: "toolCall", id: "toolu_2", name: "dummy", arguments: { q: "y" } },
 						],
-						api: "anthropic-messages",
-						provider: "anthropic",
+						api: "openai-completions",
+						provider: "deepseek",
 						model: "mock",
 						usage: {
 							input: 1,
@@ -421,7 +421,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 
 		session = new AgentSession({
 			agent,
@@ -483,7 +483,7 @@ describe("AgentSession concurrent prompt guard", () => {
 	});
 
 	it("should persist message_end events in order with slow extension handlers", async () => {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const tool = {
 			name: "dummy",
 			description: "Dummy tool",
@@ -517,8 +517,8 @@ describe("AgentSession concurrent prompt guard", () => {
 						const message: AssistantMessage = {
 							role: "assistant",
 							content: [{ type: "text", text: "done" }],
-							api: "anthropic-messages",
-							provider: "anthropic",
+							api: "openai-completions",
+							provider: "deepseek",
 							model: "mock",
 							usage: {
 								input: 1,
@@ -542,8 +542,8 @@ describe("AgentSession concurrent prompt guard", () => {
 							{ type: "text", text: "calling tool" },
 							{ type: "toolCall", id: "toolu_1", name: "dummy", arguments: { q: "x" } },
 						],
-						api: "anthropic-messages",
-						provider: "anthropic",
+						api: "openai-completions",
+						provider: "deepseek",
 						model: "mock",
 						usage: {
 							input: 1,
@@ -568,7 +568,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 
 		session = new AgentSession({
 			agent,

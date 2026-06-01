@@ -1,7 +1,7 @@
 import { once } from "node:events";
 import http from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterEach, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { convertMessages, streamOpenAICompletions } from "../src/providers/openai-completions.ts";
 import type {
 	AssistantMessage,
@@ -32,23 +32,17 @@ const compat = {
 	requiresThinkingAsText: true,
 	requiresReasoningContentOnAssistantMessages: false,
 	thinkingFormat: "openai",
-	openRouterRouting: {},
-	vercelGatewayRouting: {},
-	zaiToolStream: false,
 	supportsStrictMode: true,
-	cacheControlFormat: undefined,
 	sendSessionAffinityHeaders: false,
 	supportsLongCacheRetention: true,
-} satisfies Required<Omit<OpenAICompletionsCompat, "cacheControlFormat">> & {
-	cacheControlFormat?: OpenAICompletionsCompat["cacheControlFormat"];
-};
+} satisfies Required<OpenAICompletionsCompat>;
 
 function buildModel(baseUrl = "http://127.0.0.1:1"): Model<"openai-completions"> {
 	return {
 		id: "repro-model",
 		name: "Repro Model",
 		api: "openai-completions",
-		provider: "repro-provider",
+		provider: "deepseek",
 		baseUrl,
 		reasoning: true,
 		input: ["text"],
@@ -64,7 +58,7 @@ function buildAssistant(content: AssistantMessage["content"]): AssistantMessage 
 		role: "assistant",
 		content,
 		api: "openai-completions",
-		provider: "repro-provider",
+		provider: "deepseek",
 		model: "repro-model",
 		usage: emptyUsage,
 		stopReason: "stop",
@@ -98,10 +92,6 @@ interface ChatCompletionsRequestBody {
 }
 
 describe("openai-completions thinking-as-text replay", () => {
-	afterEach(() => {
-		delete process.env.OPENAI_API_KEY;
-	});
-
 	it("serializes same-model thinking-plus-text replay as assistant text parts", () => {
 		const messages = convertMessages(
 			buildModel(),

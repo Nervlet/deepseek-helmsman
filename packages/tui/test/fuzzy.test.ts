@@ -55,7 +55,7 @@ describe("fuzzyMatch", () => {
 	});
 
 	it("matches swapped alpha numeric tokens", () => {
-		const result = fuzzyMatch("codex52", "gpt-5.2-codex");
+		const result = fuzzyMatch("deepseekv4", "deepseek-v4-flash");
 		assert.strictEqual(result.matches, true);
 	});
 });

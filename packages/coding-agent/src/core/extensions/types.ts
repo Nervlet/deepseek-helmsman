@@ -14,7 +14,7 @@ import type {
 	AgentToolUpdateCallback,
 	ThinkingLevel,
 	ToolExecutionMode,
-} from "@earendil-works/pi-agent-core";
+} from "@deepseek-helmsman/agent-core";
 import type {
 	Api,
 	AssistantMessageEvent,
@@ -27,7 +27,7 @@ import type {
 	SimpleStreamOptions,
 	TextContent,
 	ToolResultMessage,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,
@@ -38,7 +38,7 @@ import type {
 	OverlayHandle,
 	OverlayOptions,
 	TUI,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import type { Static, TSchema } from "typebox";
 import type { Theme } from "../../modes/interactive/theme/theme.ts";
 import type { BashResult } from "../bash-executor.ts";
@@ -48,7 +48,7 @@ import type { ExecOptions, ExecResult } from "../exec.ts";
 import type { ReadonlyFooterDataProvider } from "../footer-data-provider.ts";
 import type { KeybindingsManager } from "../keybindings.ts";
 import type { CustomMessage } from "../messages.ts";
-import type { ModelRegistry } from "../model-registry.ts";
+import type { DeepSeekProviderName, ModelRegistry } from "../model-registry.ts";
 import type {
 	BranchSummaryEntry,
 	CompactionEntry,
@@ -77,6 +77,7 @@ import type {
 } from "../tools/index.ts";
 
 export type { ExecOptions, ExecResult } from "../exec.ts";
+export type { DeepSeekProviderName } from "../model-registry.ts";
 export type { BuildSystemPromptOptions } from "../system-prompt.ts";
 export type { AgentToolResult, AgentToolUpdateCallback, ToolExecutionMode };
 export type { AppKeybinding, KeybindingsManager } from "../keybindings.ts";
@@ -226,12 +227,12 @@ export interface ExtensionUIContext {
 	 * - `keybindings`: KeybindingsManager for app-level keybindings
 	 *
 	 * For full app keybinding support (escape, ctrl+d, model switching, etc.),
-	 * extend `CustomEditor` from `@earendil-works/pi-coding-agent` and call
+	 * extend `CustomEditor` from `@deepseek-helmsman/coding-agent` and call
 	 * `super.handleInput(data)` for keys you don't handle.
 	 *
 	 * @example
 	 * ```ts
-	 * import { CustomEditor } from "@earendil-works/pi-coding-agent";
+	 * import { CustomEditor } from "@deepseek-helmsman/coding-agent";
 	 *
 	 * class VimEditor extends CustomEditor {
 	 *   private mode: "normal" | "insert" = "insert";
@@ -307,7 +308,7 @@ export interface ExtensionContext {
 	/** Model registry for API key resolution */
 	modelRegistry: ModelRegistry;
 	/** Current model (may be undefined) */
-	model: Model<any> | undefined;
+	model: Model<Api> | undefined;
 	/** Whether the agent is idle (not streaming) */
 	isIdle(): boolean;
 	/** The current abort signal, or undefined when the agent is not streaming. */
@@ -316,7 +317,7 @@ export interface ExtensionContext {
 	abort(): void;
 	/** Whether there are queued messages waiting */
 	hasPendingMessages(): boolean;
-	/** Gracefully shutdown pi and exit. Available in all contexts. */
+	/** Gracefully shutdown DeepSeek Helmsman and exit. Available in all contexts. */
 	shutdown(): void;
 	/** Get current context usage for the active model. */
 	getContextUsage(): ContextUsage | undefined;
@@ -629,7 +630,7 @@ export interface BeforeAgentStartEvent {
 	images?: ImageContent[];
 	/** The fully assembled system prompt string. */
 	systemPrompt: string;
-	/** Structured options used to build the system prompt. Extensions can inspect this to understand what Pi loaded without re-discovering resources. */
+	/** Structured options used to build the system prompt. Extensions can inspect this to understand what DeepSeek Helmsman loaded without re-discovering resources. */
 	systemPromptOptions: BuildSystemPromptOptions;
 }
 
@@ -713,8 +714,8 @@ export type ModelSelectSource = "set" | "cycle" | "restore";
 /** Fired when a new model is selected */
 export interface ModelSelectEvent {
 	type: "model_select";
-	model: Model<any>;
-	previousModel: Model<any> | undefined;
+	model: Model<Api>;
+	previousModel: Model<Api> | undefined;
 	source: ModelSelectSource;
 }
 
@@ -1227,7 +1228,7 @@ export interface ExtensionAPI {
 	// =========================================================================
 
 	/** Set the current model. Returns false if no API key available. */
-	setModel(model: Model<any>): Promise<boolean>;
+	setModel(model: Model<Api>): Promise<boolean>;
 
 	/** Get current thinking level. */
 	getThinkingLevel(): ThinkingLevel;
@@ -1240,11 +1241,13 @@ export interface ExtensionAPI {
 	// =========================================================================
 
 	/**
-	 * Register or override a model provider.
+	 * Override the DeepSeek model provider.
 	 *
-	 * If `models` is provided: replaces all existing models for this provider.
-	 * If only `baseUrl` is provided: overrides the URL for existing models.
-	 * If `oauth` is provided: registers OAuth provider for /login support.
+	 * The provider name must be `deepseek`.
+	 *
+	 * If `models` is provided: replaces all existing DeepSeek models.
+	 * If only `baseUrl` is provided: overrides the URL for existing DeepSeek models.
+	 * If `oauth` is provided: registers DeepSeek OAuth support for /login.
 	 * If `streamSimple` is provided: registers a custom API stream handler.
 	 *
 	 * During initial extension load this call is queued and applied once the
@@ -1253,19 +1256,19 @@ export interface ExtensionAPI {
 	 * requiring a `/reload`.
 	 *
 	 * @example
-	 * // Register a new provider with custom models
-	 * pi.registerProvider("my-proxy", {
+	 * // Override DeepSeek with private DeepSeek-compatible models
+	 * api.registerProvider("deepseek", {
 	 *   baseUrl: "https://proxy.example.com",
-	 *   apiKey: "$PROXY_API_KEY",
-	 *   api: "anthropic-messages",
+	 *   apiKey: "$DEEPSEEK_API_KEY",
+	 *   api: "openai-completions",
 	 *   models: [
 	 *     {
-	 *       id: "claude-sonnet-4-20250514",
-	 *       name: "Claude 4 Sonnet (proxy)",
+	 *       id: "deepseek-custom",
+	 *       name: "DeepSeek Custom (proxy)",
 	 *       reasoning: false,
-	 *       input: ["text", "image"],
+	 *       input: ["text"],
 	 *       cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
-	 *       contextWindow: 200000,
+	 *       contextWindow: 128000,
 	 *       maxTokens: 16384
 	 *     }
 	 *   ]
@@ -1273,15 +1276,15 @@ export interface ExtensionAPI {
 	 *
 	 * @example
 	 * // Override baseUrl for an existing provider
-	 * pi.registerProvider("anthropic", {
+	 * api.registerProvider("deepseek", {
 	 *   baseUrl: "https://proxy.example.com"
 	 * });
 	 *
 	 * @example
-	 * // Register provider with OAuth support
-	 * pi.registerProvider("corporate-ai", {
-	 *   baseUrl: "https://ai.corp.com",
-	 *   api: "openai-responses",
+	 * // Register DeepSeek OAuth support
+	 * api.registerProvider("deepseek", {
+	 *   baseUrl: "https://deepseek.corp.com",
+	 *   api: "openai-completions",
 	 *   models: [...],
 	 *   oauth: {
 	 *     name: "Corporate AI (SSO)",
@@ -1291,22 +1294,21 @@ export interface ExtensionAPI {
 	 *   }
 	 * });
 	 */
-	registerProvider(name: string, config: ProviderConfig): void;
+	registerProvider(name: DeepSeekProviderName, config: ProviderConfig): void;
 
 	/**
-	 * Unregister a previously registered provider.
+	 * Unregister a previously registered DeepSeek provider override.
 	 *
-	 * Removes all models belonging to the named provider and restores any
-	 * built-in models that were overridden by it. Has no effect if the provider
-	 * is not currently registered.
+	 * Restores built-in DeepSeek models. Has no effect if the provider is not
+	 * currently overridden.
 	 *
 	 * Like `registerProvider`, this takes effect immediately when called after
 	 * the initial load phase.
 	 *
 	 * @example
-	 * pi.unregisterProvider("my-proxy");
+	 * api.unregisterProvider("deepseek");
 	 */
-	unregisterProvider(name: string): void;
+	unregisterProvider(name: DeepSeekProviderName): void;
 
 	/** Shared event bus for extension communication. */
 	events: EventBus;
@@ -1316,7 +1318,7 @@ export interface ExtensionAPI {
 // Provider Registration Types
 // ============================================================================
 
-/** Configuration for registering a provider via pi.registerProvider(). */
+/** Configuration for registering a provider via api.registerProvider(). */
 export interface ProviderConfig {
 	/** Display name for the provider in UI. */
 	name?: string;
@@ -1351,9 +1353,9 @@ export interface ProviderConfig {
 
 /** Configuration for a model within a provider. */
 export interface ProviderModelConfig {
-	/** Model ID (e.g., "claude-sonnet-4-20250514"). */
+	/** Model ID (e.g., "deepseek-v4-pro"). */
 	id: string;
-	/** Display name (e.g., "Claude 4 Sonnet"). */
+	/** Display name (e.g., "DeepSeek V4 Pro"). */
 	name: string;
 	/** API type override for this model. */
 	api?: Api;
@@ -1361,7 +1363,7 @@ export interface ProviderModelConfig {
 	baseUrl?: string;
 	/** Whether the model supports extended thinking. */
 	reasoning: boolean;
-	/** Maps pi thinking levels to provider/model-specific values; null marks a level unsupported. */
+	/** Maps DeepSeek Helmsman thinking levels to provider/model-specific values; null marks a level unsupported. */
 	thinkingLevelMap?: Model<Api>["thinkingLevelMap"];
 	/** Supported input types. */
 	input: ("text" | "image")[];
@@ -1378,7 +1380,7 @@ export interface ProviderModelConfig {
 }
 
 /** Extension factory function type. Supports both sync and async initialization. */
-export type ExtensionFactory = (pi: ExtensionAPI) => void | Promise<void>;
+export type ExtensionFactory = (api: ExtensionAPI) => void | Promise<void>;
 
 // ============================================================================
 // Loaded Extension Types
@@ -1437,7 +1439,7 @@ export type SetActiveToolsHandler = (toolNames: string[]) => void;
 
 export type RefreshToolsHandler = () => void;
 
-export type SetModelHandler = (model: Model<any>) => Promise<boolean>;
+export type SetModelHandler = (model: Model<Api>) => Promise<boolean>;
 
 export type GetThinkingLevelHandler = () => ThinkingLevel;
 
@@ -1452,7 +1454,7 @@ export type SetLabelHandler = (entryId: string, label: string | undefined) => vo
 export interface ExtensionRuntimeState {
 	flagValues: Map<string, boolean | string>;
 	/** Provider registrations queued during extension loading, processed when runner binds */
-	pendingProviderRegistrations: Array<{ name: string; config: ProviderConfig; extensionPath: string }>;
+	pendingProviderRegistrations: Array<{ name: DeepSeekProviderName; config: ProviderConfig; extensionPath: string }>;
 	/** Throws when this extension instance is stale after runtime replacement. */
 	assertActive: () => void;
 	/** Marks this extension instance as stale after runtime replacement or reload. */
@@ -1463,12 +1465,12 @@ export interface ExtensionRuntimeState {
 	 * Before bindCore(): queues registrations / removes from queue.
 	 * After bindCore(): calls ModelRegistry directly for immediate effect.
 	 */
-	registerProvider: (name: string, config: ProviderConfig, extensionPath?: string) => void;
-	unregisterProvider: (name: string, extensionPath?: string) => void;
+	registerProvider: (name: DeepSeekProviderName, config: ProviderConfig, extensionPath?: string) => void;
+	unregisterProvider: (name: DeepSeekProviderName, extensionPath?: string) => void;
 }
 
 /**
- * Action implementations for pi.* API methods.
+ * Action implementations for extension API methods.
  * Provided to runner.initialize(), copied into the shared runtime.
  */
 export interface ExtensionActions {
@@ -1493,7 +1495,7 @@ export interface ExtensionActions {
  * Required by all modes.
  */
 export interface ExtensionContextActions {
-	getModel: () => Model<any> | undefined;
+	getModel: () => Model<Api> | undefined;
 	isIdle: () => boolean;
 	getSignal: () => AbortSignal | undefined;
 	abort: () => void;

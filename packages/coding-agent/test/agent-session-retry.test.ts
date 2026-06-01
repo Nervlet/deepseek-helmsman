@@ -1,8 +1,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent, type AgentEvent, type AgentTool } from "@earendil-works/pi-agent-core";
-import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@earendil-works/pi-ai";
+import { Agent, type AgentEvent, type AgentTool } from "@deepseek-helmsman/agent-core";
+import { type AssistantMessage, type AssistantMessageEvent, EventStream, getModel } from "@deepseek-helmsman/ai";
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
@@ -29,8 +29,8 @@ function createAssistantMessage(text: string, overrides?: Partial<AssistantMessa
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
-		api: "anthropic-messages",
-		provider: "anthropic",
+		api: "openai-completions",
+		provider: "deepseek",
 		model: "mock",
 		usage: {
 			input: 0,
@@ -55,7 +55,7 @@ describe("AgentSession retry", () => {
 	let tempDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-retry-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-retry-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 	});
 
@@ -74,7 +74,7 @@ describe("AgentSession retry", () => {
 		const delayAssistantMessageEndMs = options?.delayAssistantMessageEndMs ?? 0;
 		let callCount = 0;
 
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: { model, systemPrompt: "Test", tools: [] },
@@ -103,7 +103,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries, baseDelayMs: 1 } });
 
 		session = new AgentSession({
@@ -195,7 +195,7 @@ describe("AgentSession retry", () => {
 		};
 		created.session.dispose();
 
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: { model, systemPrompt: "Test", tools: [] },
@@ -205,7 +205,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } });
 		session = new AgentSession({
 			agent,
@@ -247,7 +247,7 @@ describe("AgentSession retry", () => {
 			},
 		};
 
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => "test-key",
 			initialState: { model, systemPrompt: "Test", tools: [] },
@@ -290,7 +290,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } });
 
 		session = new AgentSession({

@@ -1,15 +1,15 @@
 # Extension Examples
 
-Example extensions for pi-coding-agent.
+Example extensions for DeepSeek Helmsman.
 
 ## Usage
 
 ```bash
 # Load an extension with --extension flag
-pi --extension examples/extensions/permission-gate.ts
+deepseek-helmsman --extension examples/extensions/permission-gate.ts
 
 # Or copy to extensions directory for auto-discovery
-cp permission-gate.ts ~/.pi/agent/extensions/
+cp permission-gate.ts ~/.deepseek-helmsman/agent/extensions/
 ```
 
 ## Examples
@@ -46,7 +46,7 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 | Extension | Description |
 |-----------|-------------|
 | `preset.ts` | Named presets for model, thinking level, tools, and instructions via `--preset` flag and `/preset` command |
-| `plan-mode/` | Claude Code-style plan mode for read-only exploration with `/plan` command and step tracking |
+| `plan-mode/` | Read-only planning mode with `/plan` command and step tracking |
 | `tools.ts` | Interactive `/tools` command to enable/disable tools with session persistence |
 | `handoff.ts` | Transfer context to a new focused session via `/handoff <goal>` |
 | `qna.ts` | Extracts questions from last response into editor via `ctx.ui.setEditorText()` |
@@ -58,14 +58,14 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 | `model-status.ts` | Shows model changes in status bar via `model_select` hook |
 | `snake.ts` | Snake game with custom UI, keyboard handling, and session persistence |
 | `tic-tac-toe.ts` | Tic-tac-toe vs the agent with `executionMode: "sequential"` tools to prevent race conditions on shared cursor state |
-| `send-user-message.ts` | Demonstrates `pi.sendUserMessage()` for sending user messages from extensions |
+| `send-user-message.ts` | Demonstrates `api.sendUserMessage()` for sending user messages from extensions |
 | `timed-confirm.ts` | Demonstrates AbortSignal for auto-dismissing `ctx.ui.confirm()` and `ctx.ui.select()` dialogs |
 | `rpc-demo.ts` | Exercises all RPC-supported extension UI methods; pair with [`examples/rpc-extension-ui.ts`](../rpc-extension-ui.ts) |
 | `modal-editor.ts` | Custom vim-like modal editor via `ctx.ui.setEditorComponent()` |
 | `rainbow-editor.ts` | Animated rainbow text effect via custom editor |
 | `notify.ts` | Desktop notifications via OSC 777 when agent finishes (Ghostty, iTerm2, WezTerm) |
 | `titlebar-spinner.ts` | Braille spinner animation in terminal title while the agent is working |
-| `summarize.ts` | Summarize conversation with GPT-5.2 and show in transient UI |
+| `summarize.ts` | Summarize conversation with deepseek-v4-pro and show in transient UI |
 | `custom-footer.ts` | Custom footer with git branch and token stats via `ctx.ui.setFooter()` |
 | `custom-header.ts` | Custom header via `ctx.ui.setHeader()` |
 | `overlay-test.ts` | Test overlay compositing with inline text inputs and edge cases |
@@ -89,7 +89,7 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 | Extension | Description |
 |-----------|-------------|
 | `pirate.ts` | Demonstrates `systemPromptAppend` to dynamically modify system prompt |
-| `claude-rules.ts` | Scans `.claude/rules/` folder and lists rules in system prompt |
+| `project-rules.ts` | Scans `.deepseek-helmsman/rules/` folder and lists rules in system prompt |
 | `custom-compaction.ts` | Custom compaction that summarizes entire conversation |
 | `trigger-compact.ts` | Triggers compaction when context usage exceeds 100k tokens and adds `/trigger-compact` command |
 
@@ -97,7 +97,7 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 
 | Extension | Description |
 |-----------|-------------|
-| `mac-system-theme.ts` | Syncs pi theme with macOS dark/light mode |
+| `mac-system-theme.ts` | Syncs DeepSeek Helmsman theme with macOS dark/light mode |
 
 ### Resources
 
@@ -110,7 +110,7 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 | Extension | Description |
 |-----------|-------------|
 | `message-renderer.ts` | Custom message rendering with colors and expandable details via `registerMessageRenderer` |
-| `event-bus.ts` | Inter-extension communication via `pi.events` |
+| `event-bus.ts` | Inter-extension communication via `api.events` |
 
 ### Session Metadata
 
@@ -118,13 +118,6 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 |-----------|-------------|
 | `session-name.ts` | Name sessions for the session selector via `setSessionName` |
 | `bookmark.ts` | Bookmark entries with labels for `/tree` navigation via `setLabel` |
-
-### Custom Providers
-
-| Extension | Description |
-|-----------|-------------|
-| `custom-provider-anthropic/` | Custom Anthropic provider with OAuth support and custom streaming implementation |
-| `custom-provider-gitlab-duo/` | GitLab Duo provider using pi-ai's built-in Anthropic/OpenAI streaming via proxy |
 
 ### External Dependencies
 
@@ -138,12 +131,12 @@ cp permission-gate.ts ~/.pi/agent/extensions/
 See [docs/extensions.md](../../docs/extensions.md) for full documentation.
 
 ```typescript
-import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { ExtensionAPI } from "@deepseek-helmsman/coding-agent";
 import { Type } from "typebox";
 
-export default function (pi: ExtensionAPI) {
+export default function (api: ExtensionAPI) {
   // Subscribe to lifecycle events
-  pi.on("tool_call", async (event, ctx) => {
+  api.on("tool_call", async (event, ctx) => {
     if (event.toolName === "bash" && event.input.command?.includes("rm -rf")) {
       const ok = await ctx.ui.confirm("Dangerous!", "Allow rm -rf?");
       if (!ok) return { block: true, reason: "Blocked by user" };
@@ -151,7 +144,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   // Register custom tools
-  pi.registerTool({
+  api.registerTool({
     name: "greet",
     label: "Greeting",
     description: "Generate a greeting",
@@ -167,7 +160,7 @@ export default function (pi: ExtensionAPI) {
   });
 
   // Register commands
-  pi.registerCommand("hello", {
+  api.registerCommand("hello", {
     description: "Say hello",
     handler: async (args, ctx) => {
       ctx.ui.notify("Hello!", "info");
@@ -178,14 +171,14 @@ export default function (pi: ExtensionAPI) {
 
 ## Key Patterns
 
-**Use StringEnum for string parameters** (required for Google API compatibility):
+**Use StringEnum for string parameters** (keeps schemas compatible with strict provider APIs):
 ```typescript
-import { StringEnum } from "@earendil-works/pi-ai";
+import { StringEnum } from "@deepseek-helmsman/ai";
 
 // Good
 action: StringEnum(["list", "add"] as const)
 
-// Bad - doesn't work with Google
+// Bad - not accepted by every provider API
 action: Type.Union([Type.Literal("list"), Type.Literal("add")])
 ```
 
@@ -198,7 +191,7 @@ return {
 };
 
 // Reconstruct on session events
-pi.on("session_start", async (_event, ctx) => {
+api.on("session_start", async (_event, ctx) => {
   for (const entry of ctx.sessionManager.getBranch()) {
     if (entry.type === "message" && entry.message.toolName === "my_tool") {
       const details = entry.message.details;

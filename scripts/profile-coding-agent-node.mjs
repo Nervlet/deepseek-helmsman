@@ -12,8 +12,8 @@ const distCliPath = join(packageDir, "dist", "cli.js");
 const srcCliPath = join(packageDir, "src", "cli.ts");
 const defaultNodeProfileDir = join(repoRoot, "profiles-node");
 const defaultBunProfileDir = join(repoRoot, "profiles-bun");
-const agentDirEnvName = "PI_CODING_AGENT_DIR";
-const startupBenchmarkEnvName = "PI_STARTUP_BENCHMARK";
+const agentDirEnvName = "DEEPSEEK_HELMSMAN_CODING_AGENT_DIR";
+const startupBenchmarkEnvName = "DEEPSEEK_HELMSMAN_STARTUP_BENCHMARK";
 
 function printHelp() {
 	console.log(`Usage:
@@ -33,9 +33,9 @@ Options:
                          Default: profiles-node for Node, profiles-bun for Bun
   --label <name>         Profile name prefix (default: <mode>-startup)
   --runtime <name>       node, bun, or auto (default: auto)
-  --agent-dir <dir>      Use a specific PI_CODING_AGENT_DIR for the benchmark run
+  --agent-dir <dir>      Use a specific DEEPSEEK_HELMSMAN_CODING_AGENT_DIR for the benchmark run
   --isolated-agent-dir   Use a fresh temporary agent dir instead of the normal one
-  --no-offline           Do not force PI_OFFLINE=1 / PI_SKIP_VERSION_CHECK=1
+  --no-offline           Do not force DEEPSEEK_HELMSMAN_OFFLINE=1 / DEEPSEEK_HELMSMAN_SKIP_VERSION_CHECK=1
   --skip-build           Reuse the current dist/cli.js without rebuilding first (Node only)
   --cpu-profile          Write CPU profiles for benchmark runs
   --help                 Show this help
@@ -368,8 +368,8 @@ function createBenchmarkEnv(options, isolatedAgentDir) {
 		env[startupBenchmarkEnvName] = "1";
 	}
 	if (options.offline) {
-		env.PI_OFFLINE = "1";
-		env.PI_SKIP_VERSION_CHECK = "1";
+		env.DEEPSEEK_HELMSMAN_OFFLINE = "1";
+		env.DEEPSEEK_HELMSMAN_SKIP_VERSION_CHECK = "1";
 	}
 	return env;
 }
@@ -378,7 +378,9 @@ async function runTuiBenchmarkRun({ runtime, runIndex, measuredIndex, options, p
 	const runNumber = runIndex + 1;
 	const suffix = String(runNumber).padStart(3, "0");
 	const profileName = `${options.label}-${suffix}.cpuprofile`;
-	const tempRoot = options.isolatedAgentDir ? mkdtempSync(join(tmpdir(), "pi-startup-benchmark-")) : undefined;
+	const tempRoot = options.isolatedAgentDir
+		? mkdtempSync(join(tmpdir(), "deepseek-helmsman-startup-benchmark-"))
+		: undefined;
 	const isolatedAgentDir = tempRoot ? join(tempRoot, "agent") : undefined;
 	if (isolatedAgentDir) {
 		mkdirSync(isolatedAgentDir, { recursive: true });
@@ -437,7 +439,9 @@ async function runRpcBenchmarkRun({ runtime, runIndex, measuredIndex, options, p
 	const runNumber = runIndex + 1;
 	const suffix = String(runNumber).padStart(3, "0");
 	const profileName = `${options.label}-${suffix}.cpuprofile`;
-	const tempRoot = options.isolatedAgentDir ? mkdtempSync(join(tmpdir(), "pi-startup-benchmark-")) : undefined;
+	const tempRoot = options.isolatedAgentDir
+		? mkdtempSync(join(tmpdir(), "deepseek-helmsman-startup-benchmark-"))
+		: undefined;
 	const isolatedAgentDir = tempRoot ? join(tempRoot, "agent") : undefined;
 	if (isolatedAgentDir) {
 		mkdirSync(isolatedAgentDir, { recursive: true });

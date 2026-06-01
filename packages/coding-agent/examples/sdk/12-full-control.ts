@@ -4,7 +4,7 @@
  * Replace everything - no discovery, explicit configuration.
  */
 
-import { getModel } from "@earendil-works/pi-ai";
+import { getModel } from "@deepseek-helmsman/ai";
 import {
 	AuthStorage,
 	createAgentSession,
@@ -13,20 +13,20 @@ import {
 	type ResourceLoader,
 	SessionManager,
 	SettingsManager,
-} from "@earendil-works/pi-coding-agent";
+} from "@deepseek-helmsman/coding-agent";
 
 // Custom auth storage location
 const authStorage = AuthStorage.create("/tmp/my-agent/auth.json");
 
 // Runtime API key override (not persisted)
-if (process.env.MY_ANTHROPIC_KEY) {
-	authStorage.setRuntimeApiKey("anthropic", process.env.MY_ANTHROPIC_KEY);
+if (process.env.MY_DEEPSEEK_KEY) {
+	authStorage.setRuntimeApiKey("deepseek", process.env.MY_DEEPSEEK_KEY);
 }
 
 // Model registry with no custom models.json
 const modelRegistry = ModelRegistry.inMemory(authStorage);
 
-const model = getModel("anthropic", "claude-sonnet-4-20250514");
+const model = getModel("deepseek", "deepseek-v4-pro");
 if (!model) throw new Error("Model not found");
 
 // In-memory settings with overrides

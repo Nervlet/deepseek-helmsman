@@ -10,7 +10,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getModel } from "@earendil-works/pi-ai";
+import { getModel } from "@deepseek-helmsman/ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import type { AgentSession } from "../src/core/agent-session.ts";
 import {
@@ -31,7 +31,7 @@ describe.skipIf(!API_KEY)("AgentSession forking", () => {
 	let sessionManager: SessionManager;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-branching-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-branching-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 	});
 
@@ -45,10 +45,10 @@ describe.skipIf(!API_KEY)("AgentSession forking", () => {
 	});
 
 	async function createSession(noSession: boolean = false) {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		sessionManager = noSession ? SessionManager.inMemory(tempDir) : SessionManager.create(tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
-		authStorage.setRuntimeApiKey("anthropic", API_KEY!);
+		authStorage.setRuntimeApiKey("deepseek", API_KEY!);
 
 		const servicesOptions = {
 			agentDir: tempDir,

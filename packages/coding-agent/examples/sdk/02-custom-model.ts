@@ -1,26 +1,26 @@
 /**
- * Custom Model Selection
+ * DeepSeek Model Selection
  *
  * Shows how to select a specific model and thinking level.
  */
 
-import { getModel } from "@earendil-works/pi-ai";
-import { AuthStorage, createAgentSession, ModelRegistry } from "@earendil-works/pi-coding-agent";
+import { getModel } from "@deepseek-helmsman/ai";
+import { AuthStorage, createAgentSession, ModelRegistry } from "@deepseek-helmsman/coding-agent";
 
 // Set up auth storage and model registry
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
 
 // Option 1: Find a specific built-in model by provider/id
-const opus = getModel("anthropic", "claude-opus-4-5");
-if (opus) {
-	console.log(`Found model: ${opus.provider}/${opus.id}`);
+const pro = getModel("deepseek", "deepseek-v4-pro");
+if (pro) {
+	console.log(`Found model: ${pro.provider}/${pro.id}`);
 }
 
-// Option 2: Find model via registry (includes custom models from models.json)
-const customModel = modelRegistry.find("my-provider", "my-model");
+// Option 2: Find model via registry (includes DeepSeek models from models.json)
+const customModel = modelRegistry.find("deepseek", "deepseek-custom");
 if (customModel) {
-	console.log(`Found custom model: ${customModel.provider}/${customModel.id}`);
+	console.log(`Found DeepSeek model: ${customModel.provider}/${customModel.id}`);
 }
 
 // Option 3: Pick from available models (have valid API keys)

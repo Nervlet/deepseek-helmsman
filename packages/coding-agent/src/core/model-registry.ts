@@ -1,9 +1,8 @@
 /**
- * Model registry - manages built-in and custom models, provides API key resolution.
+ * Model registry - manages DeepSeek models and provider overrides.
  */
 
 import {
-	type AnthropicMessagesCompat,
 	type Api,
 	type AssistantMessageEventStream,
 	type Context,
@@ -13,12 +12,11 @@ import {
 	type Model,
 	type OAuthProviderInterface,
 	type OpenAICompletionsCompat,
-	type OpenAIResponsesCompat,
 	registerApiProvider,
 	resetApiProviders,
 	type SimpleStreamOptions,
-} from "@earendil-works/pi-ai";
-import { registerOAuthProvider, resetOAuthProviders } from "@earendil-works/pi-ai/oauth";
+} from "@deepseek-helmsman/ai";
+import { registerOAuthProvider, resetOAuthProviders } from "@deepseek-helmsman/ai/oauth";
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import { type Static, Type } from "typebox";
@@ -41,51 +39,14 @@ import {
 	resolveHeadersOrThrow,
 } from "./resolve-config-value.ts";
 
-// Schema for OpenRouter routing preferences
-const PercentileCutoffsSchema = Type.Object({
-	p50: Type.Optional(Type.Number()),
-	p75: Type.Optional(Type.Number()),
-	p90: Type.Optional(Type.Number()),
-	p99: Type.Optional(Type.Number()),
-});
+const DEEPSEEK_PROVIDER_ID = "deepseek";
+export type DeepSeekProviderName = typeof DEEPSEEK_PROVIDER_ID;
 
-const OpenRouterRoutingSchema = Type.Object({
-	allow_fallbacks: Type.Optional(Type.Boolean()),
-	require_parameters: Type.Optional(Type.Boolean()),
-	data_collection: Type.Optional(Type.Union([Type.Literal("deny"), Type.Literal("allow")])),
-	zdr: Type.Optional(Type.Boolean()),
-	enforce_distillable_text: Type.Optional(Type.Boolean()),
-	order: Type.Optional(Type.Array(Type.String())),
-	only: Type.Optional(Type.Array(Type.String())),
-	ignore: Type.Optional(Type.Array(Type.String())),
-	quantizations: Type.Optional(Type.Array(Type.String())),
-	sort: Type.Optional(
-		Type.Union([
-			Type.String(),
-			Type.Object({
-				by: Type.Optional(Type.String()),
-				partition: Type.Optional(Type.Union([Type.String(), Type.Null()])),
-			}),
-		]),
-	),
-	max_price: Type.Optional(
-		Type.Object({
-			prompt: Type.Optional(Type.Union([Type.Number(), Type.String()])),
-			completion: Type.Optional(Type.Union([Type.Number(), Type.String()])),
-			image: Type.Optional(Type.Union([Type.Number(), Type.String()])),
-			audio: Type.Optional(Type.Union([Type.Number(), Type.String()])),
-			request: Type.Optional(Type.Union([Type.Number(), Type.String()])),
-		}),
-	),
-	preferred_min_throughput: Type.Optional(Type.Union([Type.Number(), PercentileCutoffsSchema])),
-	preferred_max_latency: Type.Optional(Type.Union([Type.Number(), PercentileCutoffsSchema])),
-});
-
-// Schema for Vercel AI Gateway routing preferences
-const VercelGatewayRoutingSchema = Type.Object({
-	only: Type.Optional(Type.Array(Type.String())),
-	order: Type.Optional(Type.Array(Type.String())),
-});
+function assertDeepSeekProvider(providerName: string): void {
+	if (providerName !== DEEPSEEK_PROVIDER_ID) {
+		throw new Error(`Provider ${providerName}: DeepSeek Helmsman only supports provider "${DEEPSEEK_PROVIDER_ID}".`);
+	}
+}
 
 // Schema for thinking level support and provider-specific values
 const ThinkingLevelMapValueSchema = Type.Union([Type.String(), Type.Null()]);
@@ -108,45 +69,16 @@ const OpenAICompletionsCompatSchema = Type.Object({
 	requiresAssistantAfterToolResult: Type.Optional(Type.Boolean()),
 	requiresThinkingAsText: Type.Optional(Type.Boolean()),
 	requiresReasoningContentOnAssistantMessages: Type.Optional(Type.Boolean()),
-	thinkingFormat: Type.Optional(
-		Type.Union([
-			Type.Literal("openai"),
-			Type.Literal("openrouter"),
-			Type.Literal("together"),
-			Type.Literal("deepseek"),
-			Type.Literal("zai"),
-			Type.Literal("qwen"),
-			Type.Literal("qwen-chat-template"),
-		]),
-	),
-	cacheControlFormat: Type.Optional(Type.Literal("anthropic")),
-	openRouterRouting: Type.Optional(OpenRouterRoutingSchema),
-	vercelGatewayRouting: Type.Optional(VercelGatewayRoutingSchema),
+	thinkingFormat: Type.Optional(Type.Union([Type.Literal("openai"), Type.Literal("deepseek")])),
 	supportsStrictMode: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-});
-
-const OpenAIResponsesCompatSchema = Type.Object({
-	sendSessionIdHeader: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
-});
-
-const AnthropicMessagesCompatSchema = Type.Object({
-	supportsEagerToolInputStreaming: Type.Optional(Type.Boolean()),
-	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
 	sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
-	supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
-	forceAdaptiveThinking: Type.Optional(Type.Boolean()),
+	supportsLongCacheRetention: Type.Optional(Type.Boolean()),
 });
 
-const ProviderCompatSchema = Type.Union([
-	OpenAICompletionsCompatSchema,
-	OpenAIResponsesCompatSchema,
-	AnthropicMessagesCompatSchema,
-]);
+const ProviderCompatSchema = OpenAICompletionsCompatSchema;
 
-// Schema for custom model definition
-// Most fields are optional with sensible defaults for local models (Ollama, LM Studio, etc.)
+// Schema for DeepSeek model definitions.
+// Most fields are optional and inherit from the built-in DeepSeek provider when possible.
 const ModelDefinitionSchema = Type.Object({
 	id: Type.String({ minLength: 1 }),
 	name: Type.Optional(Type.String({ minLength: 1 })),
@@ -318,7 +250,7 @@ export type ResolvedRequestAuth =
 			error: string;
 	  };
 
-/** Result of loading custom models from models.json */
+/** Result of loading DeepSeek model config from models.json */
 interface CustomModelsResult {
 	models: Model<Api>[];
 	/** Providers with baseUrl/headers/apiKey overrides for built-in models */
@@ -338,29 +270,9 @@ function mergeCompat(
 ): Model<Api>["compat"] | undefined {
 	if (!overrideCompat) return baseCompat;
 
-	const base = baseCompat as OpenAICompletionsCompat | OpenAIResponsesCompat | AnthropicMessagesCompat | undefined;
-	const override = overrideCompat as OpenAICompletionsCompat | OpenAIResponsesCompat | AnthropicMessagesCompat;
-	const merged = { ...base, ...override } as OpenAICompletionsCompat | OpenAIResponsesCompat | AnthropicMessagesCompat;
-
-	const baseCompletions = base as OpenAICompletionsCompat | undefined;
-	const overrideCompletions = override as OpenAICompletionsCompat;
-	const mergedCompletions = merged as OpenAICompletionsCompat;
-
-	if (baseCompletions?.openRouterRouting || overrideCompletions.openRouterRouting) {
-		mergedCompletions.openRouterRouting = {
-			...baseCompletions?.openRouterRouting,
-			...overrideCompletions.openRouterRouting,
-		};
-	}
-
-	if (baseCompletions?.vercelGatewayRouting || overrideCompletions.vercelGatewayRouting) {
-		mergedCompletions.vercelGatewayRouting = {
-			...baseCompletions?.vercelGatewayRouting,
-			...overrideCompletions.vercelGatewayRouting,
-		};
-	}
-
-	return merged as Model<Api>["compat"];
+	const base = baseCompat as OpenAICompletionsCompat | undefined;
+	const override = overrideCompat as OpenAICompletionsCompat;
+	return { ...base, ...override } as Model<Api>["compat"];
 }
 
 /**
@@ -406,7 +318,7 @@ export class ModelRegistry {
 	private models: Model<Api>[] = [];
 	private providerRequestConfigs: Map<string, ProviderRequestConfig> = new Map();
 	private modelRequestHeaders: Map<string, Record<string, string>> = new Map();
-	private registeredProviders: Map<string, ProviderConfigInput> = new Map();
+	private registeredProviders: Map<DeepSeekProviderName, ProviderConfigInput> = new Map();
 	private loadError: string | undefined = undefined;
 	readonly authStorage: AuthStorage;
 	private modelsJsonPath: string | undefined;
@@ -452,7 +364,7 @@ export class ModelRegistry {
 	}
 
 	private loadModels(): void {
-		// Load custom models and overrides from models.json
+		// Load DeepSeek model config and overrides from models.json.
 		const {
 			models: customModels,
 			overrides,
@@ -462,7 +374,7 @@ export class ModelRegistry {
 
 		if (error) {
 			this.loadError = error;
-			// Keep built-in models even if custom models failed to load
+			// Keep built-in models even if models.json failed to load.
 		}
 
 		const builtInModels = this.loadBuiltInModels(overrides, modelOverrides);
@@ -512,7 +424,7 @@ export class ModelRegistry {
 		});
 	}
 
-	/** Merge custom models into built-in list by provider+id (custom wins on conflicts). */
+	/** Merge models into built-in list by provider+id (models.json wins on conflicts). */
 	private mergeCustomModels(builtInModels: Model<Api>[], customModels: Model<Api>[]): Model<Api>[] {
 		const merged = [...builtInModels];
 		for (const customModel of customModels) {
@@ -582,11 +494,9 @@ export class ModelRegistry {
 	}
 
 	private validateConfig(config: ModelsConfig): void {
-		const builtInProviders = new Set<string>(getProviders());
-
 		for (const [providerName, providerConfig] of Object.entries(config.providers)) {
-			const isBuiltIn = builtInProviders.has(providerName);
-			const hasProviderApi = !!providerConfig.api;
+			assertDeepSeekProvider(providerName);
+
 			const models = providerConfig.models ?? [];
 			const hasModelOverrides =
 				providerConfig.modelOverrides && Object.keys(providerConfig.modelOverrides).length > 0;
@@ -598,28 +508,10 @@ export class ModelRegistry {
 						`Provider ${providerName}: must specify "baseUrl", "headers", "compat", "modelOverrides", or "models".`,
 					);
 				}
-			} else if (!isBuiltIn) {
-				// Non-built-in providers with custom models require endpoint + auth.
-				if (!providerConfig.baseUrl) {
-					throw new Error(`Provider ${providerName}: "baseUrl" is required when defining custom models.`);
-				}
-				if (!providerConfig.apiKey) {
-					throw new Error(`Provider ${providerName}: "apiKey" is required when defining custom models.`);
-				}
 			}
-			// Built-in providers with custom models: baseUrl/apiKey/api are optional,
-			// inherited from built-in models. Auth comes from env vars / auth storage.
+			// DeepSeek models inherit api/baseUrl/auth from the built-in provider when omitted.
 
 			for (const modelDef of models) {
-				const hasModelApi = !!modelDef.api;
-
-				if (!hasProviderApi && !hasModelApi && !isBuiltIn) {
-					throw new Error(
-						`Provider ${providerName}, model ${modelDef.id}: no "api" specified. Set at provider or model level.`,
-					);
-				}
-				// For built-in providers, api is optional — inherited from built-in models.
-
 				if (!modelDef.id) throw new Error(`Provider ${providerName}: model missing "id"`);
 				// Validate contextWindow/maxTokens only if provided (they have defaults)
 				if (modelDef.contextWindow !== undefined && modelDef.contextWindow <= 0)
@@ -827,7 +719,7 @@ export class ModelRegistry {
 	 * Get display name for a provider.
 	 */
 	getProviderDisplayName(provider: string): string {
-		const registeredProvider = this.registeredProviders.get(provider);
+		const registeredProvider = provider === DEEPSEEK_PROVIDER_ID ? this.registeredProviders.get(provider) : undefined;
 		const oauthProvider = this.authStorage.getOAuthProviders().find((p) => p.id === provider);
 
 		return (
@@ -867,7 +759,9 @@ export class ModelRegistry {
 	 * If provider has only baseUrl/headers: overrides existing models' URLs.
 	 * If provider has oauth: registers OAuth provider for /login support.
 	 */
-	registerProvider(providerName: string, config: ProviderConfigInput): void {
+	registerProvider(providerName: DeepSeekProviderName, config: ProviderConfigInput): void {
+		assertDeepSeekProvider(providerName);
+
 		const migratedConfig = migrateLegacyRegisterProviderConfigValues(providerName, config);
 		this.validateProviderConfig(providerName, migratedConfig);
 		this.applyProviderConfig(providerName, migratedConfig);
@@ -883,7 +777,9 @@ export class ModelRegistry {
 	 * remaining dynamic providers.
 	 * Has no effect if the provider was never registered.
 	 */
-	unregisterProvider(providerName: string): void {
+	unregisterProvider(providerName: DeepSeekProviderName): void {
+		assertDeepSeekProvider(providerName);
+
 		if (!this.registeredProviders.has(providerName)) return;
 		this.registeredProviders.delete(providerName);
 		this.refresh();
@@ -895,7 +791,7 @@ export class ModelRegistry {
 	 * override existing ones; undefined values are preserved from the stored config.
 	 * If the provider is not registered, the incoming config is stored as-is.
 	 */
-	private upsertRegisteredProvider(providerName: string, config: ProviderConfigInput): void {
+	private upsertRegisteredProvider(providerName: DeepSeekProviderName, config: ProviderConfigInput): void {
 		const existing = this.registeredProviders.get(providerName);
 		if (!existing) {
 			this.registeredProviders.set(providerName, config);
@@ -908,7 +804,7 @@ export class ModelRegistry {
 		}
 	}
 
-	private validateProviderConfig(providerName: string, config: ProviderConfigInput): void {
+	private validateProviderConfig(providerName: DeepSeekProviderName, config: ProviderConfigInput): void {
 		if (config.streamSimple && !config.api) {
 			throw new Error(`Provider ${providerName}: "api" is required when registering streamSimple.`);
 		}
@@ -932,7 +828,7 @@ export class ModelRegistry {
 		}
 	}
 
-	private applyProviderConfig(providerName: string, config: ProviderConfigInput): void {
+	private applyProviderConfig(providerName: DeepSeekProviderName, config: ProviderConfigInput): void {
 		// Register OAuth provider if provided
 		if (config.oauth) {
 			// Ensure the OAuth provider ID matches the provider name

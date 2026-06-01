@@ -1,4 +1,4 @@
-import type { Message } from "@earendil-works/pi-ai";
+import type { Message } from "@deepseek-helmsman/ai";
 import { describe, expect, it } from "vitest";
 import { serializeConversation } from "../src/core/compaction/utils.ts";
 
@@ -55,8 +55,8 @@ describe("serializeConversation", () => {
 			{
 				role: "assistant",
 				content: [{ type: "text", text: longText }],
-				api: "anthropic",
-				provider: "anthropic",
+				api: "deepseek",
+				provider: "deepseek",
 				model: "test",
 				usage: {
 					input: 0,

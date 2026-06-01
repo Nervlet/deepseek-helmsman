@@ -1,6 +1,6 @@
 import { join } from "node:path";
-import { Agent, type AgentMessage, type ThinkingLevel } from "@earendil-works/pi-agent-core";
-import { clampThinkingLevel, type Message, type Model, streamSimple } from "@earendil-works/pi-ai";
+import { Agent, type AgentMessage, type ThinkingLevel } from "@deepseek-helmsman/agent-core";
+import { clampThinkingLevel, type Message, type Model, streamSimple } from "@deepseek-helmsman/ai";
 import { getAgentDir } from "../config.ts";
 import { resolvePath } from "../utils/paths.ts";
 import { AgentSession } from "./agent-session.ts";
@@ -34,7 +34,7 @@ import {
 export interface CreateAgentSessionOptions {
 	/** Working directory for project-local discovery. Default: process.cwd() */
 	cwd?: string;
-	/** Global config directory. Default: ~/.pi/agent */
+	/** Global config directory. Default: ~/.deepseek-helmsman/agent */
 	agentDir?: string;
 
 	/** Auth storage for credentials. Default: AuthStorage.create(agentDir/auth.json) */
@@ -60,7 +60,7 @@ export interface CreateAgentSessionOptions {
 	/**
 	 * Optional allowlist of tool names.
 	 *
-	 * When omitted, pi enables the default built-in tools (read, bash, edit, write)
+	 * When omitted, DeepSeek Helmsman enables the default built-in tools (read, bash, edit, write)
 	 * and leaves extension/custom tools enabled unless `noTools` changes that default.
 	 * When provided, only the listed tool names are enabled.
 	 */
@@ -133,34 +133,12 @@ function getAttributionHeaders(
 	settingsManager: SettingsManager,
 	sessionId?: string,
 ): Record<string, string> | undefined {
-	if (
-		sessionId &&
-		(model.provider === "opencode" || model.provider === "opencode-go" || model.baseUrl.includes("opencode.ai"))
-	) {
-		return { "x-opencode-session": sessionId, "x-opencode-client": "pi" };
-	}
-
 	if (!isInstallTelemetryEnabled(settingsManager)) {
 		return undefined;
 	}
 
-	if (model.provider === "openrouter" || model.baseUrl.includes("openrouter.ai")) {
-		return {
-			"HTTP-Referer": "https://pi.dev",
-			"X-OpenRouter-Title": "pi",
-			"X-OpenRouter-Categories": "cli-agent",
-		};
-	}
-
-	if (
-		model.provider === "cloudflare-workers-ai" ||
-		model.provider === "cloudflare-ai-gateway" ||
-		model.baseUrl.includes("api.cloudflare.com") ||
-		model.baseUrl.includes("gateway.ai.cloudflare.com")
-	) {
-		return {
-			"User-Agent": "pi-coding-agent",
-		};
+	if (sessionId && model.provider === "deepseek") {
+		return { "User-Agent": "deepseek-helmsman" };
 	}
 
 	return undefined;
@@ -175,9 +153,9 @@ function getAttributionHeaders(
  * const { session } = await createAgentSession();
  *
  * // With explicit model
- * import { getModel } from '@earendil-works/pi-ai';
+ * import { getModel } from '@deepseek-helmsman/ai';
  * const { session } = await createAgentSession({
- *   model: getModel('anthropic', 'claude-opus-4-5'),
+ *   model: getModel('deepseek', 'deepseek-v4-pro'),
  *   thinkingLevel: 'high',
  * });
  *
@@ -342,10 +320,7 @@ export async function createAgentSession(options: CreateAgentSessionOptions = {}
 				throw new Error(auth.error);
 			}
 			const providerRetrySettings = settingsManager.getProviderRetrySettings();
-			const timeoutMs =
-				options?.timeoutMs ??
-				providerRetrySettings.timeoutMs ??
-				(model.api === "openai-codex-responses" ? settingsManager.getHttpIdleTimeoutMs() : undefined);
+			const timeoutMs = options?.timeoutMs ?? providerRetrySettings.timeoutMs;
 			const websocketConnectTimeoutMs =
 				options?.websocketConnectTimeoutMs ?? settingsManager.getWebSocketConnectTimeoutMs();
 			const attributionHeaders = getAttributionHeaders(model, settingsManager, options?.sessionId);

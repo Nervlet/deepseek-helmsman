@@ -96,10 +96,9 @@ describe("faux provider", () => {
 		expect(thinker.content).toEqual([{ type: "text", text: "faux-thinker:true" }]);
 	});
 
-	it("rewrites api, provider, and model on returned messages", async () => {
+	it("rewrites api and model on returned messages while preserving the DeepSeek provider", async () => {
 		const registration = registerFauxProvider({
 			api: "faux:test",
-			provider: "faux-provider",
 			models: [{ id: "faux-model" }],
 		});
 		registrations.push(registration);
@@ -110,7 +109,7 @@ describe("faux provider", () => {
 		});
 
 		expect(response.api).toBe("faux:test");
-		expect(response.provider).toBe("faux-provider");
+		expect(response.provider).toBe("deepseek");
 		expect(response.model).toBe("faux-model");
 	});
 

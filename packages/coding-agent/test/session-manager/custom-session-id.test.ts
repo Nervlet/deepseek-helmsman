@@ -64,7 +64,7 @@ describe("SessionManager.newSession with custom id", () => {
 	});
 
 	it("uses the provided id when creating a persisted session", () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "pi-session-manager-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "deepseek-helmsman-session-manager-"));
 		const session = SessionManager.create(tempDir, tempDir, { id: "created-session-id" });
 
 		expect(session.getSessionId()).toBe("created-session-id");
@@ -90,7 +90,7 @@ describe("SessionManager.newSession with custom id", () => {
 	});
 
 	it("generates a UUIDv7 id when forking from another session file", () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "pi-session-manager-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "deepseek-helmsman-session-manager-"));
 		const sourcePath = join(tempDir, "source.jsonl");
 		writeFileSync(
 			sourcePath,
@@ -110,9 +110,9 @@ describe("SessionManager.newSession with custom id", () => {
 					message: {
 						role: "assistant",
 						content: [{ type: "text", text: "hello" }],
-						api: "openai-responses",
-						provider: "openai",
-						model: "gpt-5.4",
+						api: "openai-completions",
+						provider: "deepseek",
+						model: "deepseek-v4-flash",
 						usage: {
 							input: 0,
 							output: 0,
@@ -137,7 +137,7 @@ describe("SessionManager.newSession with custom id", () => {
 	});
 
 	it("uses the provided id when forking from another session file", () => {
-		const tempDir = mkdtempSync(join(tmpdir(), "pi-session-manager-"));
+		const tempDir = mkdtempSync(join(tmpdir(), "deepseek-helmsman-session-manager-"));
 		const sourcePath = join(tempDir, "source.jsonl");
 		writeFileSync(
 			sourcePath,

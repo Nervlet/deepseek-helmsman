@@ -16,7 +16,7 @@ describe("config value env var syntax migration", () => {
 	});
 
 	function createAgentDir(): string {
-		const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "pi-config-value-migration-test-"));
+		const agentDir = fs.mkdtempSync(path.join(os.tmpdir(), "deepseek-helmsman-config-value-migration-test-"));
 		tempDirs.push(agentDir);
 		return agentDir;
 	}
@@ -41,9 +41,9 @@ describe("config value env var syntax migration", () => {
 			path.join(agentDir, "auth.json"),
 			`${JSON.stringify(
 				{
-					anthropic: { type: "api_key", key: "ANTHROPIC_API_KEY" },
-					openai: { type: "api_key", key: "$OPENAI_API_KEY" },
-					opencode: { type: "api_key", key: "public" },
+					deepseek: { type: "api_key", key: "DEEPSEEK_API_KEY" },
+					"external-entry": { type: "api_key", key: "$EXTERNAL_ENTRY_API_KEY" },
+					"literal-entry": { type: "api_key", key: "public" },
 					github: { type: "oauth", access: "ACCESS_TOKEN", refresh: "REFRESH_TOKEN", expires: 1 },
 				},
 				null,
@@ -59,13 +59,13 @@ describe("config value env var syntax migration", () => {
 			string,
 			Record<string, unknown>
 		>;
-		expect(migrated.anthropic.key).toBe("$ANTHROPIC_API_KEY");
-		expect(migrated.openai.key).toBe("$OPENAI_API_KEY");
-		expect(migrated.opencode.key).toBe("public");
+		expect(migrated.deepseek.key).toBe("$DEEPSEEK_API_KEY");
+		expect(migrated["external-entry"].key).toBe("$EXTERNAL_ENTRY_API_KEY");
+		expect(migrated["literal-entry"].key).toBe("public");
 		expect(migrated.github.access).toBe("ACCESS_TOKEN");
 		const logMessage = String(logSpy.mock.calls[0]?.[0] ?? "");
 		expect(logMessage).toContain("explicit $ENV_VAR syntax");
-		expect(logMessage).toContain('auth.json["anthropic"].key: ANTHROPIC_API_KEY -> $ANTHROPIC_API_KEY');
+		expect(logMessage).toContain('auth.json["deepseek"].key: DEEPSEEK_API_KEY -> $DEEPSEEK_API_KEY');
 	});
 
 	it("rewrites legacy uppercase models.json API key and header values", () => {
@@ -75,7 +75,7 @@ describe("config value env var syntax migration", () => {
 			`${JSON.stringify(
 				{
 					providers: {
-						"custom-provider": {
+						deepseek: {
 							baseUrl: "https://example.com/v1",
 							apiKey: "CUSTOM_API_KEY",
 							api: "openai-completions",
@@ -115,24 +115,22 @@ describe("config value env var syntax migration", () => {
 				}
 			>;
 		};
-		const provider = migrated.providers["custom-provider"]!;
+		const provider = migrated.providers.deepseek!;
 		expect(provider.apiKey).toBe("$CUSTOM_API_KEY");
 		expect(provider.headers?.["x-api-key"]).toBe("$HEADER_API_KEY");
 		expect(provider.headers?.["x-literal"]).toBe("literal");
 		expect(provider.models?.[0]?.headers?.["x-model-key"]).toBe("$MODEL_API_KEY");
 		expect(provider.modelOverrides?.["model-b"]?.headers?.["x-override-key"]).toBe("$OVERRIDE_API_KEY");
 		const logMessage = String(logSpy.mock.calls[0]?.[0] ?? "");
+		expect(logMessage).toContain('models.json.providers["deepseek"].apiKey: CUSTOM_API_KEY -> $CUSTOM_API_KEY');
 		expect(logMessage).toContain(
-			'models.json.providers["custom-provider"].apiKey: CUSTOM_API_KEY -> $CUSTOM_API_KEY',
+			'models.json.providers["deepseek"].headers["x-api-key"]: HEADER_API_KEY -> $HEADER_API_KEY',
 		);
 		expect(logMessage).toContain(
-			'models.json.providers["custom-provider"].headers["x-api-key"]: HEADER_API_KEY -> $HEADER_API_KEY',
+			'models.json.providers["deepseek"].models["model-a"].headers["x-model-key"]: MODEL_API_KEY -> $MODEL_API_KEY',
 		);
 		expect(logMessage).toContain(
-			'models.json.providers["custom-provider"].models["model-a"].headers["x-model-key"]: MODEL_API_KEY -> $MODEL_API_KEY',
-		);
-		expect(logMessage).toContain(
-			'models.json.providers["custom-provider"].modelOverrides["model-b"].headers["x-override-key"]: OVERRIDE_API_KEY -> $OVERRIDE_API_KEY',
+			'models.json.providers["deepseek"].modelOverrides["model-b"].headers["x-override-key"]: OVERRIDE_API_KEY -> $OVERRIDE_API_KEY',
 		);
 	});
 });

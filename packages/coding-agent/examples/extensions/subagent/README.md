@@ -4,7 +4,7 @@ Delegate tasks to specialized subagents with isolated context windows.
 
 ## Features
 
-- **Isolated context**: Each subagent runs in a separate `pi` process
+- **Isolated context**: Each subagent runs in a separate `deepseek-helmsman` process
 - **Streaming output**: See tool calls and progress as they happen
 - **Parallel streaming**: All parallel tasks stream updates simultaneously
 - **Markdown rendering**: Final output rendered with proper formatting (expanded view)
@@ -35,30 +35,30 @@ From the repository root, symlink the files:
 
 ```bash
 # Symlink the extension (must be in a subdirectory with index.ts)
-mkdir -p ~/.pi/agent/extensions/subagent
-ln -sf "$(pwd)/packages/coding-agent/examples/extensions/subagent/index.ts" ~/.pi/agent/extensions/subagent/index.ts
-ln -sf "$(pwd)/packages/coding-agent/examples/extensions/subagent/agents.ts" ~/.pi/agent/extensions/subagent/agents.ts
+mkdir -p ~/.deepseek-helmsman/agent/extensions/subagent
+ln -sf "$(pwd)/packages/coding-agent/examples/extensions/subagent/index.ts" ~/.deepseek-helmsman/agent/extensions/subagent/index.ts
+ln -sf "$(pwd)/packages/coding-agent/examples/extensions/subagent/agents.ts" ~/.deepseek-helmsman/agent/extensions/subagent/agents.ts
 
 # Symlink agents
-mkdir -p ~/.pi/agent/agents
+mkdir -p ~/.deepseek-helmsman/agent/agents
 for f in packages/coding-agent/examples/extensions/subagent/agents/*.md; do
-  ln -sf "$(pwd)/$f" ~/.pi/agent/agents/$(basename "$f")
+  ln -sf "$(pwd)/$f" ~/.deepseek-helmsman/agent/agents/$(basename "$f")
 done
 
 # Symlink workflow prompts
-mkdir -p ~/.pi/agent/prompts
+mkdir -p ~/.deepseek-helmsman/agent/prompts
 for f in packages/coding-agent/examples/extensions/subagent/prompts/*.md; do
-  ln -sf "$(pwd)/$f" ~/.pi/agent/prompts/$(basename "$f")
+  ln -sf "$(pwd)/$f" ~/.deepseek-helmsman/agent/prompts/$(basename "$f")
 done
 ```
 
 ## Security Model
 
-This tool executes a separate `pi` subprocess with a delegated system prompt and tool/model configuration.
+This tool executes a separate `deepseek-helmsman` subprocess with a delegated system prompt and tool/model configuration.
 
-**Project-local agents** (`.pi/agents/*.md`) are repo-controlled prompts that can instruct the model to read files, run bash commands, etc.
+**Project-local agents** (`.deepseek-helmsman/agents/*.md`) are repo-controlled prompts that can instruct the model to read files, run bash commands, etc.
 
-**Default behavior:** Only loads **user-level agents** from `~/.pi/agent/agents`.
+**Default behavior:** Only loads **user-level agents** from `~/.deepseek-helmsman/agent/agents`.
 
 To enable project-local agents, pass `agentScope: "both"` (or `"project"`). Only do this for repositories you trust.
 
@@ -131,15 +131,15 @@ Agents are markdown files with YAML frontmatter:
 name: my-agent
 description: What this agent does
 tools: read, grep, find, ls
-model: claude-haiku-4-5
+model: deepseek-v4-flash
 ---
 
 System prompt for the agent goes here.
 ```
 
 **Locations:**
-- `~/.pi/agent/agents/*.md` - User-level (always loaded)
-- `.pi/agents/*.md` - Project-level (only with `agentScope: "project"` or `"both"`)
+- `~/.deepseek-helmsman/agent/agents/*.md` - User-level (always loaded)
+- `.deepseek-helmsman/agents/*.md` - Project-level (only with `agentScope: "project"` or `"both"`)
 
 Project agents override user agents with the same name when `agentScope: "both"`.
 
@@ -147,10 +147,10 @@ Project agents override user agents with the same name when `agentScope: "both"`
 
 | Agent | Purpose | Model | Tools |
 |-------|---------|-------|-------|
-| `scout` | Fast codebase recon | Haiku | read, grep, find, ls, bash |
-| `planner` | Implementation plans | Sonnet | read, grep, find, ls |
-| `reviewer` | Code review | Sonnet | read, grep, find, ls, bash |
-| `worker` | General-purpose | Sonnet | (all default) |
+| `scout` | Fast codebase recon | DeepSeek V4 Flash | read, grep, find, ls, bash |
+| `planner` | Implementation plans | DeepSeek V4 Pro | read, grep, find, ls |
+| `reviewer` | Code review | DeepSeek V4 Pro | read, grep, find, ls, bash |
+| `worker` | General-purpose | DeepSeek V4 Pro | (all default) |
 
 ## Workflow Prompts
 

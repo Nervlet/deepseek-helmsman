@@ -7,13 +7,13 @@ import {
 	createAssistantMessageEventStream,
 	type Model,
 	type SimpleStreamOptions,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { ModelRegistry } from "../src/core/model-registry.ts";
 import { createAgentSession } from "../src/core/sdk.ts";
 import { SessionManager } from "../src/core/session-manager.ts";
-import { SettingsManager } from "../src/core/settings-manager.ts";
+import { type Settings, SettingsManager } from "../src/core/settings-manager.ts";
 
 describe("createAgentSession stream options", () => {
 	let tempDir: string;
@@ -21,7 +21,7 @@ describe("createAgentSession stream options", () => {
 	let agentDir: string;
 
 	beforeEach(() => {
-		tempDir = mkdtempSync(join(tmpdir(), "pi-sdk-stream-options-"));
+		tempDir = mkdtempSync(join(tmpdir(), "deepseek-helmsman-sdk-stream-options-"));
 		cwd = join(tempDir, "project");
 		agentDir = join(tempDir, "agent");
 		mkdirSync(cwd, { recursive: true });
@@ -39,7 +39,7 @@ describe("createAgentSession stream options", () => {
 			id: "capture-model",
 			name: "Capture Model",
 			api,
-			provider: "capture-provider",
+			provider: "deepseek",
 			baseUrl: "https://capture.invalid/v1",
 			reasoning: false,
 			input: ["text"],
@@ -55,7 +55,7 @@ describe("createAgentSession stream options", () => {
 			role: "assistant",
 			content: [{ type: "text", text: "ok" }],
 			api,
-			provider: "capture-provider",
+			provider: "deepseek",
 			model: "capture-model",
 			usage: {
 				input: 0,
@@ -74,7 +74,7 @@ describe("createAgentSession stream options", () => {
 
 	async function captureStreamOptions(
 		api: Api,
-		settings: { httpIdleTimeoutMs?: number; websocketConnectTimeoutMs?: number },
+		settings: Partial<Settings>,
 		requestOptions: SimpleStreamOptions = {},
 	): Promise<SimpleStreamOptions | undefined> {
 		const model = createModel(api);
@@ -85,7 +85,7 @@ describe("createAgentSession stream options", () => {
 		const modelRegistry = ModelRegistry.create(authStorage, join(agentDir, "models.json"));
 		let capturedOptions: SimpleStreamOptions | undefined;
 
-		modelRegistry.registerProvider(model.provider, {
+		modelRegistry.registerProvider("deepseek", {
 			api,
 			streamSimple: (_model, _context, providerOptions) => {
 				capturedOptions = providerOptions;
@@ -109,41 +109,37 @@ describe("createAgentSession stream options", () => {
 			return capturedOptions;
 		} finally {
 			session.dispose();
-			modelRegistry.unregisterProvider(model.provider);
+			modelRegistry.unregisterProvider("deepseek");
 		}
 	}
 
-	it("forwards httpIdleTimeoutMs as timeoutMs for OpenAI Codex", async () => {
-		const options = await captureStreamOptions("openai-codex-responses", { httpIdleTimeoutMs: 1234 });
+	it("forwards retry.provider.timeoutMs as timeoutMs for DeepSeek-compatible requests", async () => {
+		const options = await captureStreamOptions("openai-completions", { retry: { provider: { timeoutMs: 1234 } } });
 
 		expect(options?.timeoutMs).toBe(1234);
 	});
 
-	it("does not default timeoutMs from httpIdleTimeoutMs for other providers", async () => {
+	it("does not default timeoutMs from httpIdleTimeoutMs for DeepSeek-compatible requests", async () => {
 		const options = await captureStreamOptions("openai-completions", { httpIdleTimeoutMs: 1234 });
 
 		expect(options?.timeoutMs).toBeUndefined();
 	});
 
-	it("lets request timeoutMs override httpIdleTimeoutMs for OpenAI Codex", async () => {
-		const options = await captureStreamOptions(
-			"openai-codex-responses",
-			{ httpIdleTimeoutMs: 1234 },
-			{ timeoutMs: 0 },
-		);
+	it("lets request timeoutMs override httpIdleTimeoutMs for OpenAI-compatible requests", async () => {
+		const options = await captureStreamOptions("openai-completions", { httpIdleTimeoutMs: 1234 }, { timeoutMs: 0 });
 
 		expect(options?.timeoutMs).toBe(0);
 	});
 
 	it("forwards websocketConnectTimeoutMs from settings", async () => {
-		const options = await captureStreamOptions("openai-codex-responses", { websocketConnectTimeoutMs: 1234 });
+		const options = await captureStreamOptions("openai-completions", { websocketConnectTimeoutMs: 1234 });
 
 		expect(options?.websocketConnectTimeoutMs).toBe(1234);
 	});
 
 	it("lets request websocketConnectTimeoutMs override settings", async () => {
 		const options = await captureStreamOptions(
-			"openai-codex-responses",
+			"openai-completions",
 			{ websocketConnectTimeoutMs: 1234 },
 			{ websocketConnectTimeoutMs: 0 },
 		);

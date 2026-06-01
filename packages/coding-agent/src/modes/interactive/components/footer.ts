@@ -1,5 +1,5 @@
 import { isAbsolute, relative, resolve, sep } from "node:path";
-import { type Component, truncateToWidth, visibleWidth } from "@earendil-works/pi-tui";
+import { type Component, truncateToWidth, visibleWidth } from "@deepseek-helmsman/tui";
 import type { AgentSession } from "../../../core/agent-session.ts";
 import type { ReadonlyFooterDataProvider } from "../../../core/footer-data-provider.ts";
 import { theme } from "../theme/theme.ts";
@@ -128,10 +128,10 @@ export class FooterComponent implements Component {
 		if (totalCacheRead) statsParts.push(`R${formatTokens(totalCacheRead)}`);
 		if (totalCacheWrite) statsParts.push(`W${formatTokens(totalCacheWrite)}`);
 
-		// Show cost with "(sub)" indicator if using OAuth subscription
-		const usingSubscription = state.model ? this.session.modelRegistry.isUsingOAuth(state.model) : false;
-		if (totalCost || usingSubscription) {
-			const costStr = `$${totalCost.toFixed(3)}${usingSubscription ? " (sub)" : ""}`;
+		// Show cost with an OAuth marker when credential-backed billing is external to the API response.
+		const usingOAuth = state.model ? this.session.modelRegistry.isUsingOAuth(state.model) : false;
+		if (totalCost || usingOAuth) {
+			const costStr = `$${totalCost.toFixed(3)}${usingOAuth ? " (oauth)" : ""}`;
 			statsParts.push(costStr);
 		}
 

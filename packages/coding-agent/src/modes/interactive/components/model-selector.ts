@@ -1,4 +1,4 @@
-import { type Model, modelsAreEqual } from "@earendil-works/pi-ai";
+import { type Model, modelsAreEqual } from "@deepseek-helmsman/ai";
 import {
 	Container,
 	type Focusable,
@@ -8,7 +8,7 @@ import {
 	Spacer,
 	Text,
 	type TUI,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import type { ModelRegistry } from "../../../core/model-registry.ts";
 import type { SettingsManager } from "../../../core/settings-manager.ts";
 import { theme } from "../theme/theme.ts";
@@ -93,7 +93,7 @@ export class ModelSelectorComponent extends Container implements Focusable {
 			this.scopeHintText = new Text(this.getScopeHintText(), 0, 0);
 			this.addChild(this.scopeHintText);
 		} else {
-			const hintText = "Only showing models from configured providers. Use /login to add providers.";
+			const hintText = "Only showing configured DeepSeek models. Use /login to configure authentication.";
 			this.addChild(new Text(theme.fg("warning", hintText), 0, 0));
 		}
 		this.addChild(new Spacer(1));

@@ -63,27 +63,28 @@ vi.mock("openai", () => {
 });
 
 describe("openai-completions prompt caching", () => {
-	const originalEnv = process.env.PI_CACHE_RETENTION;
+	const originalEnv = process.env.DEEPSEEK_HELMSMAN_CACHE_RETENTION;
 
 	beforeEach(() => {
 		mockState.lastParams = undefined;
 		mockState.lastClientOptions = undefined;
-		delete process.env.PI_CACHE_RETENTION;
+		delete process.env.DEEPSEEK_HELMSMAN_CACHE_RETENTION;
 	});
 
 	afterEach(() => {
 		if (originalEnv === undefined) {
-			delete process.env.PI_CACHE_RETENTION;
+			delete process.env.DEEPSEEK_HELMSMAN_CACHE_RETENTION;
 		} else {
-			process.env.PI_CACHE_RETENTION = originalEnv;
+			process.env.DEEPSEEK_HELMSMAN_CACHE_RETENTION = originalEnv;
 		}
 	});
 
 	function createModel(overrides: Partial<Model<"openai-completions">> = {}): Model<"openai-completions"> {
-		const { compat: _compat, ...baseModel } = getModel("openai", "gpt-4o-mini");
+		const { compat: _compat, ...baseModel } = getModel("deepseek", "deepseek-v4-pro");
 		return {
 			...(baseModel as Omit<Model<"openai-completions">, "api">),
 			api: "openai-completions",
+			baseUrl: "https://api.openai.com/v1",
 			...overrides,
 		};
 	}
@@ -111,21 +112,21 @@ describe("openai-completions prompt caching", () => {
 		};
 	}
 
-	it("sets prompt_cache_key for direct OpenAI requests when caching is enabled", async () => {
+	it("sets prompt_cache_key for cache-compatible base URLs when caching is enabled", async () => {
 		const { payload } = await captureRequest({ sessionId: "session-123" });
 
 		expect(payload?.prompt_cache_key).toBe("session-123");
 		expect(payload?.prompt_cache_retention).toBeUndefined();
 	});
 
-	it("sets prompt_cache_retention to 24h for direct OpenAI requests when cacheRetention is long", async () => {
+	it("sets prompt_cache_retention to 24h for cache-compatible base URLs when cacheRetention is long", async () => {
 		const { payload } = await captureRequest({ cacheRetention: "long", sessionId: "session-456" });
 
 		expect(payload?.prompt_cache_key).toBe("session-456");
 		expect(payload?.prompt_cache_retention).toBe("24h");
 	});
 
-	it("clamps prompt_cache_key to OpenAI's 64-character limit", async () => {
+	it("clamps prompt_cache_key to the 64-character provider limit", async () => {
 		const sessionId = "x".repeat(67);
 		const { payload } = await captureRequest({ sessionId });
 
@@ -150,8 +151,8 @@ describe("openai-completions prompt caching", () => {
 		expect(payload?.prompt_cache_retention).toBeUndefined();
 	});
 
-	it("uses PI_CACHE_RETENTION for direct OpenAI requests", async () => {
-		process.env.PI_CACHE_RETENTION = "long";
+	it("uses DEEPSEEK_HELMSMAN_CACHE_RETENTION for direct OpenAI-compatible requests", async () => {
+		process.env.DEEPSEEK_HELMSMAN_CACHE_RETENTION = "long";
 		const { payload } = await captureRequest({ sessionId: "session-env" });
 
 		expect(payload?.prompt_cache_key).toBe("session-env");

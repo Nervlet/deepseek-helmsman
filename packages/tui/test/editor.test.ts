@@ -2583,9 +2583,9 @@ describe("Editor component", () => {
 					if (modelMatch) {
 						const modelText = modelMatch[1]!;
 						const allModels = [
-							{ value: "gpt-4o", label: "gpt-4o" },
-							{ value: "gpt-4o-mini", label: "gpt-4o-mini" },
-							{ value: "claude-sonnet", label: "claude-sonnet" },
+							{ value: "deepseek-v4-flash", label: "deepseek-v4-flash" },
+							{ value: "deepseek-v4-pro", label: "deepseek-v4-pro" },
+							{ value: "deepseek-v3", label: "deepseek-v3" },
 						];
 						// Return all models that start with the typed prefix
 						const filtered = allModels.filter((m) => m.value.startsWith(modelText));
@@ -2600,7 +2600,7 @@ describe("Editor component", () => {
 
 			editor.setAutocompleteProvider(mockProvider);
 
-			// Type "/model gpt-4o-mini" - exact match for second item in list
+			// Type "/model deepseek-v4-pro" - exact match for second item in list
 			editor.handleInput("/");
 			editor.handleInput("m");
 			editor.handleInput("o");
@@ -2608,19 +2608,11 @@ describe("Editor component", () => {
 			editor.handleInput("e");
 			editor.handleInput("l");
 			editor.handleInput(" ");
-			editor.handleInput("g");
-			editor.handleInput("p");
-			editor.handleInput("t");
-			editor.handleInput("-");
-			editor.handleInput("4");
-			editor.handleInput("o");
-			editor.handleInput("-");
-			editor.handleInput("m");
-			editor.handleInput("i");
-			editor.handleInput("n");
-			editor.handleInput("i");
+			for (const char of "deepseek-v4-pro") {
+				editor.handleInput(char);
+			}
 
-			assert.strictEqual(editor.getText(), "/model gpt-4o-mini");
+			assert.strictEqual(editor.getText(), "/model deepseek-v4-pro");
 			await flushAutocomplete();
 			assert.strictEqual(editor.isShowingAutocomplete(), true);
 
@@ -2628,7 +2620,7 @@ describe("Editor component", () => {
 			editor.handleInput("\r");
 
 			// The exact typed value should be retained
-			assert.strictEqual(editor.getText(), "/model gpt-4o-mini");
+			assert.strictEqual(editor.getText(), "/model deepseek-v4-pro");
 		});
 
 		it("awaits async slash command argument completions", async () => {
@@ -2687,7 +2679,7 @@ describe("Editor component", () => {
 					{
 						name: "model",
 						description: "Switch model",
-						getArgumentCompletions: () => [{ value: "claude-opus", label: "claude-opus" }],
+						getArgumentCompletions: () => [{ value: "deepseek-v4-pro", label: "deepseek-v4-pro" }],
 					},
 				],
 				process.cwd(),

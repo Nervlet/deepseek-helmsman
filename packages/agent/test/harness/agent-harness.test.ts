@@ -1,4 +1,4 @@
-import { fauxAssistantMessage, fauxToolCall, getModel, registerFauxProvider } from "@earendil-works/pi-ai";
+import { fauxAssistantMessage, fauxToolCall, getModel, registerFauxProvider } from "@deepseek-helmsman/ai";
 import { afterEach, describe, expect, it } from "vitest";
 import { AgentHarness } from "../../src/harness/agent-harness.ts";
 import { NodeExecutionEnv } from "../../src/harness/env/nodejs.ts";
@@ -54,7 +54,7 @@ describe("AgentHarness", () => {
 	it("constructs directly and exposes queue modes", () => {
 		const session = new Session(new InMemorySessionStorage());
 		const env = new NodeExecutionEnv({ cwd: process.cwd() });
-		const initialModel = getModel("anthropic", "claude-sonnet-4-5");
+		const initialModel = getModel("deepseek", "deepseek-v4-pro");
 		const harness = new AgentHarness({
 			env,
 			session,
@@ -457,7 +457,7 @@ describe("AgentHarness", () => {
 	it("preserves app tool types for getters and update events", async () => {
 		const session = new Session(new InMemorySessionStorage());
 		const env = new NodeExecutionEnv({ cwd: process.cwd() });
-		const model = getModel("anthropic", "claude-sonnet-4-5");
+		const model = getModel("deepseek", "deepseek-v4-pro");
 		type AppTool = AgentTool<typeof calculateTool.parameters, undefined> & { source: "builtin" | "extension" };
 		const inspectTool: AppTool = { ...calculateTool, name: "inspect", source: "builtin" };
 		const searchTool: AppTool = { ...calculateTool, name: "search", source: "extension" };
@@ -528,7 +528,7 @@ describe("AgentHarness", () => {
 	it("validates constructor tool names", () => {
 		const session = new Session(new InMemorySessionStorage());
 		const env = new NodeExecutionEnv({ cwd: process.cwd() });
-		const model = getModel("anthropic", "claude-sonnet-4-5");
+		const model = getModel("deepseek", "deepseek-v4-pro");
 		expect(
 			() => new AgentHarness({ env, session, model, tools: [calculateTool], activeToolNames: ["missing"] }),
 		).toThrow(/Unknown tool/);
@@ -557,7 +557,7 @@ describe("AgentHarness", () => {
 	it("preserves app resource types for getters and update events", async () => {
 		const session = new Session(new InMemorySessionStorage());
 		const env = new NodeExecutionEnv({ cwd: process.cwd() });
-		const model = getModel("anthropic", "claude-sonnet-4-5");
+		const model = getModel("deepseek", "deepseek-v4-pro");
 		const harness = new AgentHarness<AppSkill, AppPromptTemplate, AgentTool>({ env, session, model });
 		const skill: AppSkill = {
 			name: "inspect",

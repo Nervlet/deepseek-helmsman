@@ -5,8 +5,8 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
-import { getModel } from "@earendil-works/pi-ai";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { getModel } from "@deepseek-helmsman/ai";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
@@ -24,7 +24,7 @@ import { createSyntheticSourceInfo } from "../src/core/source-info.ts";
 import { createCodingTools } from "../src/index.ts";
 import { createTestResourceLoader } from "./utilities.ts";
 
-const API_KEY = process.env.ANTHROPIC_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
+const API_KEY = process.env.DEEPSEEK_API_KEY;
 
 describe.skipIf(!API_KEY)("Compaction extensions", () => {
 	let session: AgentSession;
@@ -32,7 +32,7 @@ describe.skipIf(!API_KEY)("Compaction extensions", () => {
 	let capturedEvents: SessionEvent[];
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-compaction-extensions-test-${Date.now()}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-compaction-extensions-test-${Date.now()}`);
 		mkdirSync(tempDir, { recursive: true });
 		capturedEvents = [];
 	});
@@ -86,7 +86,7 @@ describe.skipIf(!API_KEY)("Compaction extensions", () => {
 	}
 
 	function createSession(extensions: Extension[]) {
-		const model = getModel("anthropic", "claude-sonnet-4-5")!;
+		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		const agent = new Agent({
 			getApiKey: () => API_KEY,
 			initialState: {

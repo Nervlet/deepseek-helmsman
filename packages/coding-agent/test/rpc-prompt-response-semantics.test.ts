@@ -1,14 +1,14 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
+import { Agent } from "@deepseek-helmsman/agent-core";
 import {
 	type AssistantMessage,
 	type AssistantMessageEvent,
 	EventStream,
 	getModel,
 	type Model,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { AgentSession } from "../src/core/agent-session.ts";
 import type { AgentSessionRuntime } from "../src/core/agent-session-runtime.ts";
@@ -60,9 +60,9 @@ function createAssistantMessage(text: string): AssistantMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
-		api: "anthropic-messages",
-		provider: "anthropic",
-		model: "claude-sonnet-4-5",
+		api: "openai-completions",
+		provider: "deepseek",
+		model: "deepseek-v4-pro",
 		usage: {
 			input: 0,
 			output: 0,
@@ -99,10 +99,10 @@ function createRuntimeHost(options: { withAuth: boolean; responseDelayMs: number
 	runtimeHost: AgentSessionRuntime;
 	cleanup: () => Promise<void>;
 } {
-	const tempDir = join(tmpdir(), `pi-rpc-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const tempDir = join(tmpdir(), `deepseek-helmsman-rpc-prompt-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
-	const model = options.model ?? getModel("anthropic", "claude-sonnet-4-5");
+	const model = options.model ?? getModel("deepseek", "deepseek-v4-pro");
 	if (!model) {
 		throw new Error("Test model not found");
 	}
@@ -131,7 +131,7 @@ function createRuntimeHost(options: { withAuth: boolean; responseDelayMs: number
 	const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 	const modelRegistry = ModelRegistry.create(authStorage, tempDir);
 	if (options.withAuth) {
-		authStorage.setRuntimeApiKey("anthropic", "test-key");
+		authStorage.setRuntimeApiKey("deepseek", "test-key");
 	}
 
 	const session = new AgentSession({
@@ -195,10 +195,10 @@ describe("RPC prompt response semantics", () => {
 			withAuth: false,
 			responseDelayMs: 0,
 			model: {
-				id: "fake-model",
-				name: "Fake Model",
+				id: "deepseek-v4-pro",
+				name: "DeepSeek V4 Pro",
 				api: "openai-completions",
-				provider: "fake-provider",
+				provider: "deepseek",
 				baseUrl: "https://example.invalid",
 				reasoning: false,
 				input: [],

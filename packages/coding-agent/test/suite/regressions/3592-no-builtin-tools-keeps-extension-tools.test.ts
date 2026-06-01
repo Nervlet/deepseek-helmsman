@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getModel } from "@earendil-works/pi-ai";
+import { getModel } from "@deepseek-helmsman/ai";
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
@@ -18,7 +18,10 @@ describe("regression #3592: no-builtin-tools keeps extension tools enabled", () 
 	let agentDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-no-builtin-tools-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		tempDir = join(
+			tmpdir(),
+			`deepseek-helmsman-no-builtin-tools-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+		);
 		agentDir = join(tempDir, "agent");
 		mkdirSync(agentDir, { recursive: true });
 	});
@@ -37,9 +40,9 @@ describe("regression #3592: no-builtin-tools keeps extension tools enabled", () 
 			agentDir,
 			settingsManager,
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_start", () => {
-						pi.registerTool({
+				(extensionApi) => {
+					extensionApi.on("session_start", () => {
+						extensionApi.registerTool({
 							name: "dynamic_tool",
 							label: "Dynamic Tool",
 							description: "Tool registered from session_start",
@@ -59,7 +62,7 @@ describe("regression #3592: no-builtin-tools keeps extension tools enabled", () 
 		const { session } = await createAgentSession({
 			cwd: tempDir,
 			agentDir,
-			model: getModel("anthropic", "claude-sonnet-4-5")!,
+			model: getModel("deepseek", "deepseek-v4-pro")!,
 			settingsManager,
 			sessionManager,
 			resourceLoader,
@@ -107,7 +110,7 @@ describe("regression #3592: no-builtin-tools keeps extension tools enabled", () 
 		const { session } = await createAgentSessionFromServices({
 			services,
 			sessionManager,
-			model: getModel("anthropic", "claude-sonnet-4-5")!,
+			model: getModel("deepseek", "deepseek-v4-pro")!,
 			noTools: "builtin",
 		});
 

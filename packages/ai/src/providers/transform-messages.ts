@@ -58,8 +58,7 @@ function downgradeUnsupportedImages<TApi extends Api>(messages: Message[], model
 
 /**
  * Normalize tool call ID for cross-provider compatibility.
- * OpenAI Responses API generates IDs that are 450+ chars with special characters like `|`.
- * Anthropic APIs require IDs matching ^[a-zA-Z0-9_-]+$ (max 64 chars).
+ * Some OpenAI-compatible gateways reject very long IDs or special characters.
  */
 export function transformMessages<TApi extends Api>(
 	messages: Message[],

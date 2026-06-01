@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { getModel } from "@earendil-works/pi-ai";
+import { getModel } from "@deepseek-helmsman/ai";
 import { Type } from "typebox";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { DefaultResourceLoader } from "../../../src/core/resource-loader.ts";
@@ -14,7 +14,7 @@ describe("regression #2835: tool allowlists filter extension tools", () => {
 	let agentDir: string;
 
 	beforeEach(() => {
-		tempDir = join(tmpdir(), `pi-tools-filter-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+		tempDir = join(tmpdir(), `deepseek-helmsman-tools-filter-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 		agentDir = join(tempDir, "agent");
 		mkdirSync(agentDir, { recursive: true });
 	});
@@ -33,9 +33,9 @@ describe("regression #2835: tool allowlists filter extension tools", () => {
 			agentDir,
 			settingsManager,
 			extensionFactories: [
-				(pi) => {
-					pi.on("session_start", () => {
-						pi.registerTool({
+				(extensionApi) => {
+					extensionApi.on("session_start", () => {
+						extensionApi.registerTool({
 							name: "dynamic_tool",
 							label: "Dynamic Tool",
 							description: "Tool registered from session_start",
@@ -55,7 +55,7 @@ describe("regression #2835: tool allowlists filter extension tools", () => {
 		const { session } = await createAgentSession({
 			cwd: tempDir,
 			agentDir,
-			model: getModel("anthropic", "claude-sonnet-4-5")!,
+			model: getModel("deepseek", "deepseek-v4-pro")!,
 			settingsManager,
 			sessionManager,
 			resourceLoader,

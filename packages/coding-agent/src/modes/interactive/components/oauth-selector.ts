@@ -6,7 +6,7 @@ import {
 	Input,
 	Spacer,
 	TruncatedText,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import type { AuthStatus, AuthStorage } from "../../../core/auth-storage.ts";
 import { theme } from "../theme/theme.ts";
 import { DynamicBorder } from "./dynamic-border.ts";
@@ -66,7 +66,7 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 		this.addChild(new Spacer(1));
 
 		// Add title
-		const title = mode === "login" ? "Select provider to configure:" : "Select provider to logout:";
+		const title = mode === "login" ? "Select authentication to configure:" : "Select authentication to logout:";
 		this.addChild(new TruncatedText(theme.fg("accent", theme.bold(title)), 1, 0));
 		this.addChild(new Spacer(1));
 
@@ -141,9 +141,9 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 			const message =
 				this.allProviders.length === 0
 					? this.mode === "login"
-						? "No providers available"
-						: "No providers logged in. Use /login first."
-					: "No matching providers";
+						? "No authentication options available"
+						: "No authentication configured. Use /login first."
+					: "No matching authentication options";
 			this.listContainer.addChild(new TruncatedText(theme.fg("muted", `  ${message}`), 1, 0));
 		}
 	}
@@ -152,7 +152,7 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 		const credential = this.authStorage.get(provider.id);
 		if (credential?.type === provider.authType) return theme.fg("success", " ✓ configured");
 		if (credential) {
-			const label = credential.type === "oauth" ? "subscription configured" : "API key configured";
+			const label = credential.type === "oauth" ? "OAuth configured" : "API key configured";
 			return theme.fg("muted", " • ") + theme.fg("warning", label);
 		}
 		if (provider.authType !== "api_key") return theme.fg("muted", " • unconfigured");

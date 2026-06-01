@@ -5,9 +5,9 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { Agent } from "@earendil-works/pi-agent-core";
-import { getModel, type OAuthCredentials, type OAuthProvider } from "@earendil-works/pi-ai";
-import { getOAuthApiKey } from "@earendil-works/pi-ai/oauth";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { getModel, type OAuthCredentials, type OAuthProvider } from "@deepseek-helmsman/ai";
+import { getOAuthApiKey } from "@deepseek-helmsman/ai/oauth";
 import { AgentSession } from "../src/core/agent-session.ts";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { createEventBus } from "../src/core/event-bus.ts";
@@ -23,13 +23,13 @@ import { createCodingTools } from "../src/index.ts";
  * API key for authenticated tests. Tests using this should be wrapped in
  * describe.skipIf(!API_KEY)
  */
-export const API_KEY = process.env.ANTHROPIC_OAUTH_TOKEN || process.env.ANTHROPIC_API_KEY;
+export const API_KEY = process.env.DEEPSEEK_API_KEY;
 
 // ============================================================================
-// OAuth API key resolution from ~/.pi/agent/auth.json
+// OAuth API key resolution from ~/.deepseek-helmsman/agent/auth.json
 // ============================================================================
 
-const AUTH_PATH = join(homedir(), ".pi", "agent", "auth.json");
+const AUTH_PATH = join(homedir(), ".deepseek-helmsman", "agent", "auth.json");
 
 type ApiKeyCredential = {
 	type: "api_key";
@@ -66,7 +66,7 @@ function saveAuthStorage(storage: AuthStorageData): void {
 }
 
 /**
- * Resolve API key for a provider from ~/.pi/agent/auth.json
+ * Resolve API key for a provider from ~/.deepseek-helmsman/agent/auth.json
  *
  * For API key credentials, returns the key directly.
  * For OAuth credentials, returns the access token (refreshing if expired and saving back).
@@ -106,18 +106,18 @@ export async function resolveApiKey(provider: string): Promise<string | undefine
 }
 
 /**
- * Check if a provider has credentials in ~/.pi/agent/auth.json
+ * Check if a provider has credentials in ~/.deepseek-helmsman/agent/auth.json
  */
 export function hasAuthForProvider(provider: string): boolean {
 	const storage = loadAuthStorage();
 	return provider in storage;
 }
 
-/** Path to the real pi agent config directory */
-export const PI_AGENT_DIR = join(homedir(), ".pi", "agent");
+/** Path to the real DeepSeek Helmsman agent config directory */
+export const DEEPSEEK_HELMSMAN_CODING_AGENT_DIR = join(homedir(), ".deepseek-helmsman", "agent");
 
 /**
- * Get an AuthStorage instance backed by ~/.pi/agent/auth.json
+ * Get an AuthStorage instance backed by ~/.deepseek-helmsman/agent/auth.json
  * Use this for tests that need real OAuth credentials.
  */
 export function getRealAuthStorage(): AuthStorage {
@@ -138,8 +138,8 @@ export function assistantMsg(text: string) {
 	return {
 		role: "assistant" as const,
 		content: [{ type: "text" as const, text }],
-		api: "anthropic-messages" as const,
-		provider: "anthropic",
+		api: "openai-completions" as const,
+		provider: "deepseek",
 		model: "test",
 		usage: {
 			input: 1,
@@ -232,10 +232,10 @@ export function createTestResourceLoader(options: CreateTestResourceLoaderOption
  * Use this for e2e tests that need real LLM calls.
  */
 export function createTestSession(options: TestSessionOptions = {}): TestSessionContext {
-	const tempDir = join(tmpdir(), `pi-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const tempDir = join(tmpdir(), `deepseek-helmsman-test-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 
-	const model = getModel("anthropic", "claude-sonnet-4-5")!;
+	const model = getModel("deepseek", "deepseek-v4-pro")!;
 	const agent = new Agent({
 		getApiKey: () => API_KEY,
 		initialState: {

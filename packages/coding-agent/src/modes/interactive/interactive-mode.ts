@@ -7,7 +7,7 @@ import * as crypto from "node:crypto";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import type { AgentMessage } from "@deepseek-helmsman/agent-core";
 import {
 	type AssistantMessage,
 	getProviders,
@@ -16,7 +16,7 @@ import {
 	type Model,
 	type OAuthProviderId,
 	type OAuthSelectPrompt,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import type {
 	AutocompleteItem,
 	AutocompleteProvider,
@@ -27,7 +27,7 @@ import type {
 	OverlayHandle,
 	OverlayOptions,
 	SlashCommand,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import {
 	CombinedAutocompleteProvider,
 	type Component,
@@ -46,7 +46,7 @@ import {
 	TruncatedText,
 	TUI,
 	visibleWidth,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import chalk from "chalk";
 import { spawn, spawnSync } from "child_process";
 import {
@@ -55,7 +55,6 @@ import {
 	getAgentDir,
 	getAuthPath,
 	getDebugLogPath,
-	getDocsPath,
 	getShareViewerUrl,
 	VERSION,
 } from "../../config.ts";
@@ -88,12 +87,12 @@ import type { TruncationResult } from "../../core/tools/truncate.ts";
 import { getChangelogPath, getNewEntries, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
+import { getDeepSeekHelmsmanUserAgent } from "../../utils/deepseek-helmsman-user-agent.ts";
 import { parseGitUrl } from "../../utils/git.ts";
 import { getCwdRelativePath } from "../../utils/paths.ts";
-import { getPiUserAgent } from "../../utils/pi-user-agent.ts";
 import { killTrackedDetachedChildren } from "../../utils/shell.ts";
 import { ensureTool } from "../../utils/tools-manager.ts";
-import { checkForNewPiVersion, type LatestPiRelease } from "../../utils/version-check.ts";
+import { checkForNewDeepSeekHelmsmanVersion, type LatestDeepSeekHelmsmanRelease } from "../../utils/version-check.ts";
 import { ArminComponent } from "./components/armin.ts";
 import { AssistantMessageComponent } from "./components/assistant-message.ts";
 import { BashExecutionComponent } from "./components/bash-execution.ts";
@@ -104,8 +103,8 @@ import { CountdownTimer } from "./components/countdown-timer.ts";
 import { CustomEditor } from "./components/custom-editor.ts";
 import { CustomMessageComponent } from "./components/custom-message.ts";
 import { DaxnutsComponent } from "./components/daxnuts.ts";
+import { DeepSeekHelmsmanAnnouncementComponent } from "./components/deepseek-helmsman-announcement.ts";
 import { DynamicBorder } from "./components/dynamic-border.ts";
-import { EarendilAnnouncementComponent } from "./components/earendil-announcement.ts";
 import { ExtensionEditorComponent } from "./components/extension-editor.ts";
 import { ExtensionInputComponent } from "./components/extension-input.ts";
 import { ExtensionSelectorComponent } from "./components/extension-selector.ts";
@@ -184,13 +183,6 @@ function isDeadTerminalError(error: unknown): boolean {
 	return code !== undefined && DEAD_TERMINAL_ERROR_CODES.has(code);
 }
 
-const ANTHROPIC_SUBSCRIPTION_AUTH_WARNING =
-	"Anthropic subscription auth is active. Third-party harness usage draws from extra usage and is billed per token, not your Claude plan limits. Manage extra usage at https://claude.ai/settings/usage.";
-
-function isAnthropicSubscriptionAuthKey(apiKey: string | undefined): boolean {
-	return typeof apiKey === "string" && apiKey.startsWith("sk-ant-oat");
-}
-
 function isUnknownModel(model: Model<any> | undefined): boolean {
 	return !!model && model.provider === "unknown" && model.id === "unknown" && model.api === "unknown";
 }
@@ -220,8 +212,6 @@ export function formatResumeCommand(sessionManager: SessionManager): string | un
 function hasDefaultModelProvider(providerId: string): providerId is keyof typeof defaultModelPerProvider {
 	return providerId in defaultModelPerProvider;
 }
-
-const BEDROCK_PROVIDER_ID = "amazon-bedrock";
 
 const BUILT_IN_MODEL_PROVIDERS = new Set<string>(getProviders());
 
@@ -290,7 +280,6 @@ export class InteractiveMode {
 	private lastEscapeTime = 0;
 	private changelogMarkdown: string | undefined = undefined;
 	private startupNoticesShown = false;
-	private anthropicSubscriptionWarningShown = false;
 
 	// Status line tracking (for mutating immediately-sequential status updates)
 	private lastStatusSpacer: Spacer | undefined = undefined;
@@ -494,7 +483,7 @@ export class InteractiveMode {
 					label: `${m.provider}/${m.id}`,
 				}));
 
-				// Fuzzy filter by model ID + provider (allows "opus anthropic" to match)
+				// Fuzzy filter by model ID + provider.
 				const filtered = fuzzyFilter(items, prefix, (item) => `${item.id} ${item.provider}`);
 
 				if (filtered.length === 0) return null;
@@ -661,7 +650,7 @@ export class InteractiveMode {
 			);
 			const onboarding = theme.fg(
 				"dim",
-				`Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.`,
+				`DeepSeek Helmsman can explain its own features and look up its docs. Ask it how to use or extend it.`,
 			);
 			this.builtInHeader = new ExpandableText(
 				() => `${logo}\n${compactInstructions}\n${compactOnboarding}\n\n${onboarding}`,
@@ -741,7 +730,7 @@ export class InteractiveMode {
 		await this.init();
 
 		// Start version check asynchronously
-		checkForNewPiVersion(this.version).then((newRelease) => {
+		checkForNewDeepSeekHelmsmanVersion(this.version).then((newRelease) => {
 			if (newRelease) {
 				this.showNewVersionNotification(newRelease);
 			}
@@ -777,8 +766,6 @@ export class InteractiveMode {
 			this.showWarning(modelFallbackMessage);
 		}
 
-		void this.maybeWarnAboutAnthropicSubscriptionAuth();
-
 		// Process initial messages
 		if (initialMessage) {
 			try {
@@ -813,7 +800,7 @@ export class InteractiveMode {
 	}
 
 	private async checkForPackageUpdates(): Promise<string[]> {
-		if (process.env.PI_OFFLINE) {
+		if (process.env.DEEPSEEK_HELMSMAN_OFFLINE) {
 			return [];
 		}
 
@@ -871,7 +858,7 @@ export class InteractiveMode {
 		}
 
 		if (extendedKeysFormat === "xterm") {
-			return "tmux extended-keys-format is xterm. Pi works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux.";
+			return "tmux extended-keys-format is xterm. DeepSeek Helmsman works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart tmux.";
 		}
 
 		return undefined;
@@ -909,7 +896,7 @@ export class InteractiveMode {
 	}
 
 	private reportInstallTelemetry(version: string): void {
-		if (process.env.PI_OFFLINE) {
+		if (process.env.DEEPSEEK_HELMSMAN_OFFLINE) {
 			return;
 		}
 
@@ -917,9 +904,14 @@ export class InteractiveMode {
 			return;
 		}
 
-		void fetch(`https://pi.dev/api/report-install?version=${encodeURIComponent(version)}`, {
+		const telemetryUrl = process.env.DEEPSEEK_HELMSMAN_TELEMETRY_URL;
+		if (!telemetryUrl) {
+			return;
+		}
+
+		void fetch(`${telemetryUrl}?version=${encodeURIComponent(version)}`, {
 			headers: {
-				"User-Agent": getPiUserAgent(version),
+				"User-Agent": getDeepSeekHelmsmanUserAgent(version),
 			},
 			signal: AbortSignal.timeout(5000),
 		})
@@ -2473,7 +2465,7 @@ export class InteractiveMode {
 			// Write to temp file
 			const tmpDir = os.tmpdir();
 			const ext = extensionForImageMimeType(image.mimeType) ?? "png";
-			const fileName = `pi-clipboard-${crypto.randomUUID()}.${ext}`;
+			const fileName = `deepseek-helmsman-clipboard-${crypto.randomUUID()}.${ext}`;
 			const filePath = path.join(tmpDir, fileName);
 			fs.writeFileSync(filePath, Buffer.from(image.bytes));
 
@@ -3350,7 +3342,7 @@ export class InteractiveMode {
 		try {
 			this.ui.stop();
 		} catch {}
-		console.error("pi exiting due to uncaughtException:");
+		console.error("DeepSeek Helmsman exiting due to uncaughtException:");
 		console.error(error);
 		process.exit(1);
 	}
@@ -3397,7 +3389,7 @@ export class InteractiveMode {
 
 		// Restore the terminal before the process dies on any uncaught throw.
 		// Without this, an unhandled exception from extension code (or anywhere
-		// in pi) leaves the terminal in raw mode with no cursor.
+		// in DeepSeek Helmsman) leaves the terminal in raw mode with no cursor.
 		const uncaughtExceptionHandler = (error: Error) => this.uncaughtCrash(error);
 		process.prependListener("uncaughtException", uncaughtExceptionHandler);
 		this.signalCleanupHandlers.push(() => process.off("uncaughtException", uncaughtExceptionHandler));
@@ -3521,7 +3513,6 @@ export class InteractiveMode {
 				const thinkingStr =
 					result.model.reasoning && result.thinkingLevel !== "off" ? ` (thinking: ${result.thinkingLevel})` : "";
 				this.showStatus(`Switched to ${result.model.name || result.model.id}${thinkingStr}`);
-				void this.maybeWarnAboutAnthropicSubscriptionAuth(result.model);
 			}
 		} catch (error) {
 			this.showError(error instanceof Error ? error.message : String(error));
@@ -3573,7 +3564,7 @@ export class InteractiveMode {
 		}
 
 		const currentText = this.editor.getExpandedText?.() ?? this.editor.getText();
-		const tmpFile = path.join(os.tmpdir(), `pi-editor-${Date.now()}.pi.md`);
+		const tmpFile = path.join(os.tmpdir(), `deepseek-helmsman-editor-${Date.now()}.md`);
 
 		try {
 			// Write current content to temp file
@@ -3585,7 +3576,9 @@ export class InteractiveMode {
 			// Split by space to support editor arguments (e.g., "code --wait")
 			const [editor, ...editorArgs] = editorCmd.split(" ");
 
-			process.stdout.write(`Launching external editor: ${editorCmd}\nPi will resume when the editor exits.\n`);
+			process.stdout.write(
+				`Launching external editor: ${editorCmd}\nDeepSeek Helmsman will resume when the editor exits.\n`,
+			);
 
 			// Do not use spawnSync here. On Windows, synchronous child_process calls can keep
 			// Node/libuv's console input read active after ui.stop() pauses stdin, racing
@@ -3642,10 +3635,10 @@ export class InteractiveMode {
 		this.ui.requestRender();
 	}
 
-	showNewVersionNotification(release: LatestPiRelease): void {
+	showNewVersionNotification(release: LatestDeepSeekHelmsmanRelease): void {
 		const action = theme.fg("accent", `${APP_NAME} update`);
 		const updateInstruction = theme.fg("muted", `New version ${release.version} is available. Run `) + action;
-		const changelogUrl = "https://pi.dev/changelog";
+		const changelogUrl = "https://github.com/hanbing/deepseek-helmsman/releases";
 		const changelogLink = getCapabilities().hyperlinks
 			? hyperlink(theme.fg("accent", "open changelog"), changelogUrl)
 			: theme.fg("accent", changelogUrl);
@@ -4064,7 +4057,6 @@ export class InteractiveMode {
 				this.footer.invalidate();
 				this.updateEditorBorderColor();
 				this.showStatus(`Model: ${model.id}`);
-				void this.maybeWarnAboutAnthropicSubscriptionAuth(model);
 				this.checkDaxnutsEasterEgg(model);
 			} catch (error) {
 				this.showError(error instanceof Error ? error.message : String(error));
@@ -4100,38 +4092,6 @@ export class InteractiveMode {
 		this.footerDataProvider.setAvailableProviderCount(uniqueProviders.size);
 	}
 
-	private async maybeWarnAboutAnthropicSubscriptionAuth(
-		model: Model<any> | undefined = this.session.model,
-	): Promise<void> {
-		if (this.settingsManager.getWarnings().anthropicExtraUsage === false) {
-			return;
-		}
-		if (this.anthropicSubscriptionWarningShown) {
-			return;
-		}
-		if (!model || model.provider !== "anthropic") {
-			return;
-		}
-
-		const storedCredential = this.session.modelRegistry.authStorage.get("anthropic");
-		if (storedCredential?.type === "oauth") {
-			this.anthropicSubscriptionWarningShown = true;
-			this.showWarning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING);
-			return;
-		}
-
-		try {
-			const apiKey = await this.session.modelRegistry.getApiKeyForProvider(model.provider);
-			if (!isAnthropicSubscriptionAuthKey(apiKey)) {
-				return;
-			}
-			this.anthropicSubscriptionWarningShown = true;
-			this.showWarning(ANTHROPIC_SUBSCRIPTION_AUTH_WARNING);
-		} catch {
-			// Ignore auth lookup failures for warning-only checks.
-		}
-	}
-
 	private showModelSelector(initialSearchInput?: string): void {
 		this.showSelector((done) => {
 			const selector = new ModelSelectorComponent(
@@ -4147,7 +4107,6 @@ export class InteractiveMode {
 						this.updateEditorBorderColor();
 						done();
 						this.showStatus(`Model: ${model.id}`);
-						void this.maybeWarnAboutAnthropicSubscriptionAuth(model);
 						this.checkDaxnutsEasterEgg(model);
 					} catch (error) {
 						done();
@@ -4558,7 +4517,7 @@ export class InteractiveMode {
 	}
 
 	private showLoginAuthTypeSelector(): void {
-		const subscriptionLabel = "Use a subscription";
+		const subscriptionLabel = "Use extension OAuth";
 		const apiKeyLabel = "Use an API key";
 		this.showSelector((done) => {
 			const selector = new ExtensionSelectorComponent(
@@ -4582,7 +4541,7 @@ export class InteractiveMode {
 		const providerOptions = this.getLoginProviderOptions(authType);
 		if (providerOptions.length === 0) {
 			this.showStatus(
-				authType === "oauth" ? "No subscription providers available." : "No API key providers available.",
+				authType === "oauth" ? "No extension OAuth options available." : "No API key providers available.",
 			);
 			return;
 		}
@@ -4602,8 +4561,6 @@ export class InteractiveMode {
 
 					if (providerOption.authType === "oauth") {
 						await this.showLoginDialog(providerOption.id, providerOption.name);
-					} else if (providerOption.id === BEDROCK_PROVIDER_ID) {
-						this.showBedrockSetupDialog(providerOption.id, providerOption.name);
 					} else {
 						await this.showApiKeyLoginDialog(providerOption.id, providerOption.name);
 					}
@@ -4708,44 +4665,13 @@ export class InteractiveMode {
 		this.updateEditorBorderColor();
 		if (selectedModel) {
 			this.showStatus(`${actionLabel}. Selected ${selectedModel.id}. Credentials saved to ${getAuthPath()}`);
-			void this.maybeWarnAboutAnthropicSubscriptionAuth(selectedModel);
 			this.checkDaxnutsEasterEgg(selectedModel);
 		} else {
 			this.showStatus(`${actionLabel}. Credentials saved to ${getAuthPath()}`);
 			if (selectionError) {
 				this.showError(selectionError);
-			} else {
-				void this.maybeWarnAboutAnthropicSubscriptionAuth();
 			}
 		}
-	}
-
-	private showBedrockSetupDialog(providerId: string, providerName: string): void {
-		const restoreEditor = () => {
-			this.editorContainer.clear();
-			this.editorContainer.addChild(this.editor);
-			this.ui.setFocus(this.editor);
-			this.ui.requestRender();
-		};
-
-		const dialog = new LoginDialogComponent(
-			this.ui,
-			providerId,
-			() => restoreEditor(),
-			providerName,
-			"Amazon Bedrock setup",
-		);
-		dialog.showInfo([
-			theme.fg("text", "Amazon Bedrock uses AWS credentials instead of a single API key."),
-			theme.fg("text", "Configure an AWS profile, IAM keys, bearer token, or role-based credentials."),
-			theme.fg("muted", "See:"),
-			theme.fg("accent", `  ${path.join(getDocsPath(), "providers.md")}`),
-		]);
-
-		this.editorContainer.clear();
-		this.editorContainer.addChild(dialog);
-		this.ui.setFocus(dialog);
-		this.ui.requestRender();
 	}
 
 	private async showApiKeyLoginDialog(providerId: string, providerName: string): Promise<void> {
@@ -4882,7 +4808,6 @@ export class InteractiveMode {
 								}
 							});
 					}
-					// For Anthropic: onPrompt is called immediately after
 				},
 
 				onDeviceCode: (info) => {
@@ -5474,7 +5399,7 @@ export class InteractiveMode {
 
 	private handleDementedDelves(): void {
 		this.chatContainer.addChild(new Spacer(1));
-		this.chatContainer.addChild(new EarendilAnnouncementComponent());
+		this.chatContainer.addChild(new DeepSeekHelmsmanAnnouncementComponent());
 		this.ui.requestRender();
 	}
 
@@ -5485,7 +5410,7 @@ export class InteractiveMode {
 	}
 
 	private checkDaxnutsEasterEgg(model: { provider: string; id: string }): void {
-		if (model.provider === "opencode" && model.id.toLowerCase().includes("kimi-k2.5")) {
+		if (model.provider === "deepseek" && model.id.toLowerCase().includes("daxnuts")) {
 			this.handleDaxnuts();
 		}
 	}

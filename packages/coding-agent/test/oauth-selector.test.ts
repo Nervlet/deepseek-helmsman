@@ -1,4 +1,4 @@
-import { setKeybindings } from "@earendil-works/pi-tui";
+import { setKeybindings } from "@deepseek-helmsman/tui";
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { AuthStorage } from "../src/core/auth-storage.ts";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
@@ -8,7 +8,7 @@ import { isApiKeyLoginProvider } from "../src/modes/interactive/interactive-mode
 import { initTheme } from "../src/modes/interactive/theme/theme.ts";
 import { stripAnsi } from "../src/utils/ansi.ts";
 
-const originalOpenAiApiKey = process.env.OPENAI_API_KEY;
+const originalDeepSeekApiKey = process.env.DEEPSEEK_API_KEY;
 
 describe("OAuthSelectorComponent", () => {
 	beforeAll(() => {
@@ -20,29 +20,26 @@ describe("OAuthSelectorComponent", () => {
 	});
 
 	afterEach(() => {
-		if (originalOpenAiApiKey === undefined) {
-			delete process.env.OPENAI_API_KEY;
+		if (originalDeepSeekApiKey === undefined) {
+			delete process.env.DEEPSEEK_API_KEY;
 		} else {
-			process.env.OPENAI_API_KEY = originalOpenAiApiKey;
+			process.env.DEEPSEEK_API_KEY = originalDeepSeekApiKey;
 		}
 	});
 
 	it("keeps built-in API key providers separate from OAuth-only providers", () => {
-		const oauthProviderIds = new Set(["anthropic", "github-copilot", "custom-oauth"]);
-		const builtInProviderIds = new Set(["anthropic", "github-copilot", "amazon-bedrock", "openai"]);
+		const oauthProviderIds = new Set(["custom-oauth"]);
+		const builtInProviderIds = new Set(["deepseek"]);
 
-		expect(isApiKeyLoginProvider("anthropic", oauthProviderIds, builtInProviderIds)).toBe(true);
-		expect(BUILT_IN_PROVIDER_DISPLAY_NAMES.anthropic).toBe("Anthropic");
-		expect(isApiKeyLoginProvider("openai", oauthProviderIds, builtInProviderIds)).toBe(true);
-		expect(isApiKeyLoginProvider("github-copilot", oauthProviderIds, builtInProviderIds)).toBe(false);
-		expect(isApiKeyLoginProvider("amazon-bedrock", oauthProviderIds, builtInProviderIds)).toBe(true);
+		expect(isApiKeyLoginProvider("deepseek", oauthProviderIds, builtInProviderIds)).toBe(true);
+		expect(BUILT_IN_PROVIDER_DISPLAY_NAMES.deepseek).toBe("DeepSeek");
 		expect(isApiKeyLoginProvider("custom-oauth", oauthProviderIds, builtInProviderIds)).toBe(false);
 		expect(isApiKeyLoginProvider("custom-api", oauthProviderIds, builtInProviderIds)).toBe(true);
 	});
 
 	it("shows stored OAuth auth distinctly in the API key selector", () => {
 		const authStorage = AuthStorage.inMemory({
-			anthropic: {
+			deepseek: {
 				type: "oauth",
 				access: "access-token",
 				refresh: "refresh-token",
@@ -52,50 +49,50 @@ describe("OAuthSelectorComponent", () => {
 		const selector = new OAuthSelectorComponent(
 			"login",
 			authStorage,
-			[{ id: "anthropic", name: "Anthropic", authType: "api_key" }],
+			[{ id: "deepseek", name: "DeepSeek", authType: "api_key" }],
 			() => {},
 			() => {},
 		);
 
 		const output = stripAnsi(selector.render(120).join("\n"));
 
-		expect(output).toContain("Anthropic");
-		expect(output).toContain("subscription configured");
+		expect(output).toContain("DeepSeek");
+		expect(output).toContain("OAuth configured");
 	});
 
 	it("shows environment API key auth as configured", () => {
-		process.env.OPENAI_API_KEY = "test-openai-key";
+		process.env.DEEPSEEK_API_KEY = "test-deepseek-key";
 		const authStorage = AuthStorage.inMemory();
 		const selector = new OAuthSelectorComponent(
 			"login",
 			authStorage,
-			[{ id: "openai", name: "OpenAI", authType: "api_key" }],
+			[{ id: "deepseek", name: "DeepSeek", authType: "api_key" }],
 			() => {},
 			() => {},
 		);
 
 		const output = stripAnsi(selector.render(120).join("\n"));
 
-		expect(output).toContain("OpenAI");
-		expect(output).toContain("✓ env: OPENAI_API_KEY");
+		expect(output).toContain("DeepSeek");
+		expect(output).toContain("✓ env: DEEPSEEK_API_KEY");
 		expect(output).not.toContain("unconfigured");
 	});
 
-	it("shows custom provider environment API key auth from status resolver", () => {
+	it("shows DeepSeek proxy environment API key auth from status resolver", () => {
 		const authStorage = AuthStorage.inMemory();
 		const selector = new OAuthSelectorComponent(
 			"login",
 			authStorage,
-			[{ id: "ollama", name: "ollama", authType: "api_key" }],
+			[{ id: "deepseek", name: "DeepSeek Proxy", authType: "api_key" }],
 			() => {},
 			() => {},
-			() => ({ configured: true, source: "environment", label: "OLLAMA_API_KEY" }),
+			() => ({ configured: true, source: "environment", label: "DEEPSEEK_API_KEY" }),
 		);
 
 		const output = stripAnsi(selector.render(120).join("\n"));
 
-		expect(output).toContain("ollama");
-		expect(output).toContain("✓ env: OLLAMA_API_KEY");
+		expect(output).toContain("DeepSeek Proxy");
+		expect(output).toContain("✓ env: DEEPSEEK_API_KEY");
 		expect(output).not.toContain("unconfigured");
 	});
 
@@ -104,7 +101,7 @@ describe("OAuthSelectorComponent", () => {
 		const selector = new OAuthSelectorComponent(
 			"login",
 			authStorage,
-			[{ id: "local-proxy", name: "local-proxy", authType: "api_key" }],
+			[{ id: "deepseek", name: "DeepSeek", authType: "api_key" }],
 			() => {},
 			() => {},
 			() => ({ configured: true, source: "models_json_key" }),
@@ -112,7 +109,7 @@ describe("OAuthSelectorComponent", () => {
 
 		const output = stripAnsi(selector.render(120).join("\n"));
 
-		expect(output).toContain("local-proxy");
+		expect(output).toContain("DeepSeek");
 		expect(output).toContain("✓ key in models.json");
 		expect(output).not.toContain("unconfigured");
 	});
@@ -122,7 +119,7 @@ describe("OAuthSelectorComponent", () => {
 		const selector = new OAuthSelectorComponent(
 			"login",
 			authStorage,
-			[{ id: "op-proxy", name: "op-proxy", authType: "api_key" }],
+			[{ id: "deepseek", name: "DeepSeek", authType: "api_key" }],
 			() => {},
 			() => {},
 			() => ({ configured: true, source: "models_json_command" }),
@@ -130,7 +127,7 @@ describe("OAuthSelectorComponent", () => {
 
 		const output = stripAnsi(selector.render(120).join("\n"));
 
-		expect(output).toContain("op-proxy");
+		expect(output).toContain("DeepSeek");
 		expect(output).toContain("✓ command in models.json");
 		expect(output).not.toContain("unconfigured");
 	});

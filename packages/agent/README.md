@@ -1,23 +1,23 @@
-# @earendil-works/pi-agent-core
+# @deepseek-helmsman/agent-core
 
-Stateful agent with tool execution and event streaming. Built on `@earendil-works/pi-ai`.
+Stateful agent with tool execution and event streaming. Built on `@deepseek-helmsman/ai`.
 
 ## Installation
 
 ```bash
-npm install @earendil-works/pi-agent-core
+npm install @deepseek-helmsman/agent-core
 ```
 
 ## Quick Start
 
 ```typescript
-import { Agent } from "@earendil-works/pi-agent-core";
-import { getModel } from "@earendil-works/pi-ai";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import { getModel } from "@deepseek-helmsman/ai";
 
 const agent = new Agent({
   initialState: {
     systemPrompt: "You are a helpful assistant.",
-    model: getModel("anthropic", "claude-sonnet-4-20250514"),
+    model: getModel("deepseek", "deepseek-v4-pro"),
   },
 });
 
@@ -124,7 +124,7 @@ const stream = agentLoop(prompts, context, {
 });
 ```
 
-`shouldStopAfterTurn` runs after `turn_end` is emitted and after the assistant response and any tool executions have completed normally. If it returns `true`, the loop emits `agent_end` and exits before polling steering or follow-up queues, and before starting another LLM call. It does not abort the provider stream, does not cancel running tools, and does not alter the assistant message stop reason.
+`shouldStopAfterTurn` runs after `turn_end` is emitted and after the assistant response and any tool executions have completed normally. If it returns `true`, the loop emits `agent_end` and exits before polling steering or follow-up queues, and before starting another LLM call. It does not abort the model stream, does not cancel running tools, and does not alter the assistant message stop reason.
 
 When you use the `Agent` class, assistant `message_end` processing is treated as a barrier before tool preflight begins. That means `beforeToolCall` sees agent state that already includes the assistant message that requested the tool call.
 
@@ -184,7 +184,7 @@ const agent = new Agent({
   // Custom stream function (for proxy backends)
   streamFn: streamProxy,
 
-  // Session ID for provider caching
+  // Session ID for endpoint caching
   sessionId: "session-123",
 
   // Dynamic API key resolution (for expiring OAuth tokens)
@@ -210,7 +210,7 @@ const agent = new Agent({
     }
   },
 
-  // Custom thinking budgets for token-based providers
+  // Custom thinking budgets for token-based models
   thinkingBudgets: {
     minimal: 128,
     low: 512,
@@ -268,7 +268,7 @@ await agent.continue();
 
 ```typescript
 agent.state.systemPrompt = "New prompt";
-agent.state.model = getModel("openai", "gpt-4o");
+agent.state.model = getModel("deepseek", "deepseek-v4-pro");
 agent.state.thinkingLevel = "medium";
 agent.state.tools = [myTool];
 agent.toolExecution = "sequential";
@@ -355,7 +355,7 @@ Follow-up messages are checked only when there are no more tool calls and no ste
 Extend `AgentMessage` via declaration merging:
 
 ```typescript
-declare module "@earendil-works/pi-agent-core" {
+declare module "@deepseek-helmsman/agent-core" {
   interface CustomAgentMessages {
     notification: { role: "notification"; text: string; timestamp: number };
   }
@@ -436,7 +436,7 @@ Return `terminate: true` from `execute()` or `afterToolCall` to hint that the ag
 For browser apps that proxy through a backend:
 
 ```typescript
-import { Agent, streamProxy } from "@earendil-works/pi-agent-core";
+import { Agent, streamProxy } from "@deepseek-helmsman/agent-core";
 
 const agent = new Agent({
   streamFn: (model, context, options) =>
@@ -453,7 +453,7 @@ const agent = new Agent({
 For direct control without the Agent class:
 
 ```typescript
-import { agentLoop, agentLoopContinue } from "@earendil-works/pi-agent-core";
+import { agentLoop, agentLoopContinue } from "@deepseek-helmsman/agent-core";
 
 const context: AgentContext = {
   systemPrompt: "You are helpful.",
@@ -462,7 +462,7 @@ const context: AgentContext = {
 };
 
 const config: AgentLoopConfig = {
-  model: getModel("openai", "gpt-4o"),
+  model: getModel("deepseek", "deepseek-v4-pro"),
   convertToLlm: (msgs) => msgs.filter(m => ["user", "assistant", "toolResult"].includes(m.role)),
   toolExecution: "parallel",  // overridden by per-tool executionMode if set
   beforeToolCall: async ({ toolCall, args, context }) => undefined,

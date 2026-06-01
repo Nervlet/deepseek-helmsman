@@ -1,7 +1,7 @@
-import { complete, getModel } from "@earendil-works/pi-ai";
-import type { ExtensionAPI, ExtensionCommandContext } from "@earendil-works/pi-coding-agent";
-import { DynamicBorder, getMarkdownTheme } from "@earendil-works/pi-coding-agent";
-import { Container, Markdown, matchesKey, Text } from "@earendil-works/pi-tui";
+import { complete, getModel } from "@deepseek-helmsman/ai";
+import type { ExtensionAPI, ExtensionCommandContext } from "@deepseek-helmsman/coding-agent";
+import { DynamicBorder, getMarkdownTheme } from "@deepseek-helmsman/coding-agent";
+import { Container, Markdown, matchesKey, Text } from "@deepseek-helmsman/tui";
 
 type ContentBlock = {
 	type?: string;
@@ -142,8 +142,8 @@ const showSummaryUi = async (summary: string, ctx: ExtensionCommandContext) => {
 	});
 };
 
-export default function (pi: ExtensionAPI) {
-	pi.registerCommand("summarize", {
+export default function (api: ExtensionAPI) {
+	api.registerCommand("summarize", {
 		description: "Summarize the current conversation in a custom UI",
 		handler: async (_args, ctx) => {
 			const branch = ctx.sessionManager.getBranch();
@@ -160,9 +160,9 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify("Preparing summary...", "info");
 			}
 
-			const model = getModel("openai", "gpt-5.2");
+			const model = getModel("deepseek", "deepseek-v4-pro");
 			if (!model && ctx.hasUI) {
-				ctx.ui.notify("Model openai/gpt-5.2 not found", "warning");
+				ctx.ui.notify("Model deepseek/deepseek-v4-pro not found", "warning");
 			}
 
 			const auth = model ? await ctx.modelRegistry.getApiKeyAndHeaders(model) : undefined;
@@ -170,7 +170,7 @@ export default function (pi: ExtensionAPI) {
 				ctx.ui.notify(auth.error, "warning");
 			}
 			if (auth?.ok && !auth.apiKey && ctx.hasUI) {
-				ctx.ui.notify("No API key for openai/gpt-5.2", "warning");
+				ctx.ui.notify("No API key for deepseek/deepseek-v4-pro", "warning");
 			}
 
 			if (!model || !auth?.ok || !auth.apiKey) {

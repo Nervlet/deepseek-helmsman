@@ -9,7 +9,7 @@ import type {
 	TextContent,
 	Tool,
 	ToolResultMessage,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import type { Static, TSchema } from "typebox";
 
 /**
@@ -188,8 +188,8 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 	/**
 	 * Resolves an API key dynamically for each LLM call.
 	 *
-	 * Useful for short-lived OAuth tokens (e.g., GitHub Copilot) that may expire
-	 * during long-running tool execution phases.
+	 * Useful for short-lived provider tokens that may expire during long-running
+	 * tool execution phases.
 	 *
 	 * Contract: must not throw or reject. Return undefined when no key is available.
 	 */
@@ -279,7 +279,7 @@ export interface AgentLoopConfig extends SimpleStreamOptions {
 /**
  * Thinking/reasoning level for models that support it.
  * Note: "xhigh" is only supported by selected model families. Use model thinking-level metadata
- * from @earendil-works/pi-ai to detect support for a concrete model.
+ * from @deepseek-helmsman/ai to detect support for a concrete model.
  */
 export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
 
@@ -289,7 +289,7 @@ export type ThinkingLevel = "off" | "minimal" | "low" | "medium" | "high" | "xhi
  *
  * @example
  * ```typescript
- * declare module "@mariozechner/agent" {
+ * declare module "@deepseek-helmsman/agent-core" {
  *   interface CustomAgentMessages {
  *     artifact: ArtifactMessage;
  *     notification: NotificationMessage;

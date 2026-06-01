@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentMessage } from "@earendil-works/pi-agent-core";
+import type { AgentMessage } from "@deepseek-helmsman/agent-core";
 import { afterEach } from "vitest";
 
 export function createUserMessage(text: string): AgentMessage {
@@ -16,9 +16,9 @@ export function createAssistantMessage(text: string): AgentMessage {
 	return {
 		role: "assistant",
 		content: [{ type: "text", text }],
-		api: "anthropic-messages",
-		provider: "anthropic",
-		model: "claude-sonnet-4-5",
+		api: "openai-completions",
+		provider: "deepseek",
+		model: "deepseek-v4-pro",
 		usage: {
 			input: 0,
 			output: 0,
@@ -35,7 +35,7 @@ export function createAssistantMessage(text: string): AgentMessage {
 const tempDirs: string[] = [];
 
 export function createTempDir(): string {
-	const dir = join(tmpdir(), `pi-agent-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const dir = join(tmpdir(), `deepseek-helmsman-agent-session-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(dir, { recursive: true });
 	tempDirs.push(dir);
 	return dir;

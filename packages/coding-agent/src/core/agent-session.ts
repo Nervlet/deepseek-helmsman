@@ -22,8 +22,8 @@ import type {
 	AgentState,
 	AgentTool,
 	ThinkingLevel,
-} from "@earendil-works/pi-agent-core";
-import type { AssistantMessage, ImageContent, Message, Model, TextContent } from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/agent-core";
+import type { AssistantMessage, ImageContent, Message, Model, TextContent } from "@deepseek-helmsman/ai";
 import {
 	clampThinkingLevel,
 	cleanupSessionResources,
@@ -32,7 +32,7 @@ import {
 	modelsAreEqual,
 	resetApiProviders,
 	streamSimple,
-} from "@earendil-works/pi-ai";
+} from "@deepseek-helmsman/ai";
 import { theme } from "../modes/interactive/theme/theme.ts";
 import { stripFrontmatter } from "../utils/frontmatter.ts";
 import { resolvePath } from "../utils/paths.ts";
@@ -723,7 +723,7 @@ export class AgentSession {
 		}
 
 		this._extensionRunner.invalidate(
-			"This extension ctx is stale after session replacement or reload. Do not use a captured pi or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
+			"This extension ctx is stale after session replacement or reload. Do not use a captured extension API or command ctx after ctx.newSession(), ctx.fork(), ctx.switchSession(), or ctx.reload(). For newSession, fork, and switchSession, move post-replacement work into withSession and use the ctx passed to withSession. For reload, do not use the old ctx after await ctx.reload().",
 		);
 		this._disconnectFromAgent();
 		this._eventListeners = [];
@@ -973,7 +973,7 @@ export class AgentSession {
 
 	/**
 	 * Send a prompt to the agent.
-	 * - Handles extension commands (registered via pi.registerCommand) immediately, even during streaming
+	 * - Handles extension commands (registered via api.registerCommand) immediately, even during streaming
 	 * - Expands file-based prompt templates by default
 	 * - During streaming, queues via steer() or followUp() based on streamingBehavior option
 	 * - Validates model and API key before sending (when not streaming)
@@ -987,7 +987,7 @@ export class AgentSession {
 
 		try {
 			// Handle extension commands first (execute immediately, even during streaming)
-			// Extension commands manage their own LLM interaction via pi.sendMessage()
+			// Extension commands manage their own LLM interaction via api.sendMessage()
 			if (expandPromptTemplates && text.startsWith("/")) {
 				const handled = await this._tryExecuteExtensionCommand(text);
 				if (handled) {
@@ -1797,8 +1797,8 @@ export class AgentSession {
 		const contextWindow = this.model?.contextWindow ?? 0;
 
 		// Skip overflow check if the message came from a different model.
-		// This handles the case where user switched from a smaller-context model (e.g. opus)
-		// to a larger-context model (e.g. codex) - the overflow error from the old model
+		// This handles the case where user switched from a smaller-context model
+		// to a larger-context model - the overflow error from the old model
 		// shouldn't trigger compaction for the new model.
 		const sameModel =
 			this.model && assistantMessage.provider === this.model.provider && assistantMessage.model === this.model.id;

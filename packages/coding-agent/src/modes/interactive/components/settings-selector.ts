@@ -1,5 +1,5 @@
-import type { ThinkingLevel } from "@earendil-works/pi-agent-core";
-import type { Transport } from "@earendil-works/pi-ai";
+import type { ThinkingLevel } from "@deepseek-helmsman/agent-core";
+import type { Transport } from "@deepseek-helmsman/ai";
 import {
 	Container,
 	getCapabilities,
@@ -10,7 +10,7 @@ import {
 	SettingsList,
 	Spacer,
 	Text,
-} from "@earendil-works/pi-tui";
+} from "@deepseek-helmsman/tui";
 import { formatHttpIdleTimeoutMs, HTTP_IDLE_TIMEOUT_CHOICES } from "../../../core/http-dispatcher.ts";
 import type { WarningSettings } from "../../../core/settings-manager.ts";
 import { getSelectListTheme, getSettingsListTheme, theme } from "../theme/theme.ts";
@@ -92,48 +92,6 @@ export interface SettingsCallbacks {
 /**
  * A submenu component for selecting from a list of options.
  */
-class WarningSettingsSubmenu extends Container {
-	private settingsList: SettingsList;
-	private state: WarningSettings;
-
-	constructor(warnings: WarningSettings, onChange: (warnings: WarningSettings) => void, onCancel: () => void) {
-		super();
-
-		this.state = { ...warnings };
-
-		const items: SettingItem[] = [
-			{
-				id: "anthropic-extra-usage",
-				label: "Anthropic extra usage",
-				description: "Warn when Anthropic subscription auth may use paid extra usage",
-				currentValue: (this.state.anthropicExtraUsage ?? true) ? "true" : "false",
-				values: ["true", "false"],
-			},
-		];
-
-		this.settingsList = new SettingsList(
-			items,
-			Math.min(items.length, 10),
-			getSettingsListTheme(),
-			(id, newValue) => {
-				switch (id) {
-					case "anthropic-extra-usage":
-						this.state = { ...this.state, anthropicExtraUsage: newValue === "true" };
-						onChange({ ...this.state });
-						break;
-				}
-			},
-			onCancel,
-		);
-
-		this.addChild(this.settingsList);
-	}
-
-	handleInput(data: string): void {
-		this.settingsList.handleInput(data);
-	}
-}
-
 class SelectSubmenu extends Container {
 	private selectList: SelectList;
 
@@ -209,7 +167,6 @@ export class SettingsSelectorComponent extends Container {
 
 		const supportsImages = getCapabilities().images;
 		const followUpKey = keyDisplayText("app.message.followUp");
-		let currentWarnings = { ...config.warnings };
 
 		const items: SettingItem[] = [
 			{
@@ -290,21 +247,6 @@ export class SettingsSelectorComponent extends Container {
 				description: "Default filter when opening /tree",
 				currentValue: config.treeFilterMode,
 				values: ["default", "no-tools", "user-only", "labeled-only", "all"],
-			},
-			{
-				id: "warnings",
-				label: "Warnings",
-				description: "Enable or disable individual warnings",
-				currentValue: "configure",
-				submenu: (_currentValue, done) =>
-					new WarningSettingsSubmenu(
-						currentWarnings,
-						(warnings) => {
-							currentWarnings = warnings;
-							callbacks.onWarningsChange(warnings);
-						},
-						() => done(),
-					),
 			},
 			{
 				id: "thinking",

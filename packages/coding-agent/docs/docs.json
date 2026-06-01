@@ -12,7 +12,7 @@
           "path": "quickstart.md"
         },
         {
-          "title": "Using Pi",
+          "title": "Using DeepSeek Helmsman",
           "path": "usage.md"
         },
         {
@@ -57,7 +57,7 @@
           "path": "themes.md"
         },
         {
-          "title": "Pi Packages",
+          "title": "Packages",
           "path": "packages.md"
         },
         {
@@ -65,8 +65,8 @@
           "path": "models.md"
         },
         {
-          "title": "Custom Providers",
-          "path": "custom-provider.md"
+          "title": "DeepSeek Provider Overrides",
+          "path": "provider-overrides.md"
         }
       ]
     },

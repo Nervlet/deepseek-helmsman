@@ -1,4 +1,4 @@
-import { setKeybindings } from "@earendil-works/pi-tui";
+import { setKeybindings } from "@deepseek-helmsman/tui";
 import { beforeAll, beforeEach, describe, expect, test } from "vitest";
 import { KeybindingsManager } from "../src/core/keybindings.ts";
 import type {
@@ -40,9 +40,9 @@ function assistantMessage(id: string, parentId: string | null, text: string): Se
 		message: {
 			role: "assistant",
 			content: [{ type: "text", text }],
-			api: "anthropic-messages",
-			provider: "anthropic",
-			model: "claude-sonnet-4",
+			api: "openai-completions",
+			provider: "deepseek",
+			model: "deepseek-v4-pro",
 			usage: {
 				input: 0,
 				output: 0,
@@ -67,9 +67,9 @@ function toolCallOnlyAssistant(id: string, parentId: string | null): SessionMess
 		message: {
 			role: "assistant",
 			content: [{ type: "toolCall", id: `tc-${id}`, name: "read", arguments: { path: "test.ts" } }],
-			api: "anthropic-messages",
-			provider: "anthropic",
-			model: "claude-sonnet-4",
+			api: "openai-completions",
+			provider: "deepseek",
+			model: "deepseek-v4-pro",
 			usage: {
 				input: 0,
 				output: 0,
@@ -91,8 +91,8 @@ function modelChange(id: string, parentId: string | null): ModelChangeEntry {
 		id,
 		parentId,
 		timestamp: new Date().toISOString(),
-		provider: "anthropic",
-		modelId: "claude-sonnet-4",
+		provider: "deepseek",
+		modelId: "deepseek-v4-pro",
 	};
 }
 

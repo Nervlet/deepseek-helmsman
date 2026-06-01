@@ -5,10 +5,10 @@
 import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { AgentMessage, AgentTool } from "@earendil-works/pi-agent-core";
-import { Agent } from "@earendil-works/pi-agent-core";
-import type { FauxModelDefinition, FauxProviderRegistration, FauxResponseStep, Model } from "@earendil-works/pi-ai";
-import { registerFauxProvider } from "@earendil-works/pi-ai";
+import type { AgentMessage, AgentTool } from "@deepseek-helmsman/agent-core";
+import { Agent } from "@deepseek-helmsman/agent-core";
+import type { FauxModelDefinition, FauxProviderRegistration, FauxResponseStep, Model } from "@deepseek-helmsman/ai";
+import { registerFauxProvider } from "@deepseek-helmsman/ai";
 import { AgentSession, type AgentSessionEvent } from "../../src/core/agent-session.ts";
 import { AuthStorage } from "../../src/core/auth-storage.ts";
 import type { ExtensionRunner } from "../../src/core/extensions/index.ts";
@@ -87,7 +87,7 @@ export interface Harness {
 }
 
 function createTempDir(): string {
-	const tempDir = join(tmpdir(), `pi-suite-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+	const tempDir = join(tmpdir(), `deepseek-helmsman-suite-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 	mkdirSync(tempDir, { recursive: true });
 	return tempDir;
 }
@@ -95,6 +95,7 @@ function createTempDir(): string {
 export async function createHarness(options: HarnessOptions = {}): Promise<Harness> {
 	const tempDir = createTempDir();
 	const fauxProvider: FauxProviderRegistration = registerFauxProvider({
+		provider: "deepseek",
 		models: options.models,
 	});
 	fauxProvider.setResponses([]);
@@ -112,7 +113,7 @@ export async function createHarness(options: HarnessOptions = {}): Promise<Harne
 	}
 	const modelRegistry = ModelRegistry.inMemory(authStorage);
 	if (withConfiguredAuth) {
-		modelRegistry.registerProvider(model.provider, {
+		modelRegistry.registerProvider("deepseek", {
 			baseUrl: model.baseUrl,
 			apiKey: "faux-key",
 			api: fauxProvider.api,

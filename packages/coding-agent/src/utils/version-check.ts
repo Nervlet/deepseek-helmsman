@@ -1,9 +1,9 @@
-import { getPiUserAgent } from "./pi-user-agent.ts";
+import { getDeepSeekHelmsmanUserAgent } from "./deepseek-helmsman-user-agent.ts";
 
-const LATEST_VERSION_URL = "https://pi.dev/api/latest-version";
+const LATEST_VERSION_URL = "https://api.github.com/repos/hanbing/deepseek-helmsman/releases/latest";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
-export interface LatestPiRelease {
+export interface LatestDeepSeekHelmsmanRelease {
 	version: string;
 	packageName?: string;
 	note?: string;
@@ -53,15 +53,15 @@ export function isNewerPackageVersion(candidateVersion: string, currentVersion: 
 	return candidateVersion.trim() !== currentVersion.trim();
 }
 
-export async function getLatestPiRelease(
+export async function getLatestDeepSeekHelmsmanRelease(
 	currentVersion: string,
 	options: { timeoutMs?: number } = {},
-): Promise<LatestPiRelease | undefined> {
-	if (process.env.PI_SKIP_VERSION_CHECK || process.env.PI_OFFLINE) return undefined;
+): Promise<LatestDeepSeekHelmsmanRelease | undefined> {
+	if (process.env.DEEPSEEK_HELMSMAN_SKIP_VERSION_CHECK || process.env.DEEPSEEK_HELMSMAN_OFFLINE) return undefined;
 
 	const response = await fetch(LATEST_VERSION_URL, {
 		headers: {
-			"User-Agent": getPiUserAgent(currentVersion),
+			"User-Agent": getDeepSeekHelmsmanUserAgent(currentVersion),
 			accept: "application/json",
 		},
 		signal: AbortSignal.timeout(options.timeoutMs ?? DEFAULT_VERSION_CHECK_TIMEOUT_MS),
@@ -70,32 +70,41 @@ export async function getLatestPiRelease(
 
 	const data = (await response.json()) as {
 		packageName?: unknown;
+		tag_name?: unknown;
 		version?: unknown;
 		note?: unknown;
 	};
-	if (typeof data.version !== "string" || !data.version.trim()) {
+	const rawVersion =
+		typeof data.version === "string" && data.version.trim()
+			? data.version
+			: typeof data.tag_name === "string" && data.tag_name.trim()
+				? data.tag_name
+				: undefined;
+	if (!rawVersion) {
 		return undefined;
 	}
 	const packageName =
 		typeof data.packageName === "string" && data.packageName.trim() ? data.packageName.trim() : undefined;
 	const note = typeof data.note === "string" && data.note.trim() ? data.note.trim() : undefined;
 	return {
-		version: data.version.trim(),
+		version: rawVersion.trim().replace(/^v/, ""),
 		packageName,
 		...(note ? { note } : {}),
 	};
 }
 
-export async function getLatestPiVersion(
+export async function getLatestDeepSeekHelmsmanVersion(
 	currentVersion: string,
 	options: { timeoutMs?: number } = {},
 ): Promise<string | undefined> {
-	return (await getLatestPiRelease(currentVersion, options))?.version;
+	return (await getLatestDeepSeekHelmsmanRelease(currentVersion, options))?.version;
 }
 
-export async function checkForNewPiVersion(currentVersion: string): Promise<LatestPiRelease | undefined> {
+export async function checkForNewDeepSeekHelmsmanVersion(
+	currentVersion: string,
+): Promise<LatestDeepSeekHelmsmanRelease | undefined> {
 	try {
-		const latestRelease = await getLatestPiRelease(currentVersion);
+		const latestRelease = await getLatestDeepSeekHelmsmanRelease(currentVersion);
 		if (latestRelease && isNewerPackageVersion(latestRelease.version, currentVersion)) {
 			return latestRelease;
 		}

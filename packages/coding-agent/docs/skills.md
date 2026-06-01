@@ -1,10 +1,10 @@
-> pi can create skills. Ask it to build one for your use case.
+> DeepSeek Helmsman can create skills. Ask it to build one for your use case.
 
 # Skills
 
 Skills are self-contained capability packages that the agent loads on-demand. A skill provides specialized workflows, setup instructions, helper scripts, and reference documentation for specific tasks.
 
-Pi implements the [Agent Skills standard](https://agentskills.io/specification), warning about most violations but remaining lenient. Pi allows skill names to differ from their parent directory even though the standard disallows it; that rule is suboptimal for shared skill directories used across multiple agent harnesses.
+DeepSeek Helmsman implements the [Agent Skills standard](https://agentskills.io/specification), warning about most violations but remaining lenient. It allows skill names to differ from their parent directory even though the standard disallows it; that rule is suboptimal for shared skill directories used across multiple agent harnesses.
 
 ## Table of Contents
 
@@ -21,20 +21,20 @@ Pi implements the [Agent Skills standard](https://agentskills.io/specification),
 
 > **Security:** Skills can instruct the model to perform any action and may include executable code the model invokes. Review skill content before use.
 
-Pi loads skills from:
+DeepSeek Helmsman loads skills from:
 
 - Global:
-  - `~/.pi/agent/skills/`
+  - `~/.deepseek-helmsman/agent/skills/`
   - `~/.agents/skills/`
 - Project:
-  - `.pi/skills/`
+  - `.deepseek-helmsman/skills/`
   - `.agents/skills/` in `cwd` and ancestor directories (up to git repo root, or filesystem root when not in a repo)
-- Packages: `skills/` directories or `pi.skills` entries in `package.json`
+- Packages: `skills/` directories or package manifest entries in `package.json`
 - Settings: `skills` array with files or directories
 - CLI: `--skill <path>` (repeatable, additive even with `--no-skills`)
 
 Discovery rules:
-- In `~/.pi/agent/skills/` and `.pi/skills/`, direct root `.md` files are discovered as individual skills
+- In `~/.deepseek-helmsman/agent/skills/` and `.deepseek-helmsman/skills/`, direct root `.md` files are discovered as individual skills
 - In all skill locations, directories containing `SKILL.md` are discovered recursively
 - In `~/.agents/skills/` and project `.agents/skills/`, root `.md` files are ignored
 
@@ -42,28 +42,28 @@ Disable discovery with `--no-skills` (explicit `--skill` paths still load).
 
 ### Using Skills from Other Harnesses
 
-To use skills from Claude Code or OpenAI Codex, add their directories to settings:
+To use skills from other compatible harnesses, add their directories to settings:
 
 ```json
 {
   "skills": [
-    "~/.claude/skills",
-    "~/.codex/skills"
+    "~/.agents/skills",
+    "~/shared-agent-skills"
   ]
 }
 ```
 
-For project-level Claude Code skills, add to `.pi/settings.json`:
+For project-level skill directories, add a relative path to `.deepseek-helmsman/settings.json`:
 
 ```json
 {
-  "skills": ["../.claude/skills"]
+  "skills": ["../.agents/skills"]
 }
 ```
 
 ## How Skills Work
 
-1. At startup, pi scans skill locations and extracts names and descriptions
+1. At startup, DeepSeek Helmsman scans skill locations and extracts names and descriptions
 2. The system prompt includes available skills in XML format per the [specification](https://agentskills.io/integrate-skills)
 3. When a task matches, the agent uses `read` to load the full SKILL.md (models don't always do this; use prompting or `/skill:name` to force it)
 4. The agent follows the instructions, using relative paths to reference scripts and assets
@@ -140,7 +140,7 @@ Per the [Agent Skills specification](https://agentskills.io/specification#frontm
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `name` | Yes | Max 64 chars. Lowercase a-z, 0-9, hyphens. Unlike the standard, Pi does not require this to match the parent directory because that standard requirement is suboptimal for shared skill directories. |
+| `name` | Yes | Max 64 chars. Lowercase a-z, 0-9, hyphens. Unlike the standard, DeepSeek Helmsman does not require this to match the parent directory because that standard requirement is suboptimal for shared skill directories. |
 | `description` | Yes | Max 1024 chars. What the skill does and when to use it. |
 | `license` | No | License name or reference to bundled file. |
 | `compatibility` | No | Max 500 chars. Environment requirements. |
@@ -154,7 +154,7 @@ Per the [Agent Skills specification](https://agentskills.io/specification#frontm
 - Lowercase letters, numbers, hyphens only
 - No leading/trailing hyphens
 - No consecutive hyphens
-Pi does not require the name to match the parent directory. The Agent Skills standard does, but that requirement is suboptimal for shared skill directories used by multiple tools.
+DeepSeek Helmsman does not require the name to match the parent directory. The Agent Skills standard does, but that requirement is suboptimal for shared skill directories used by multiple tools.
 
 Valid: `pdf-processing`, `data-analysis`, `code-review`
 Invalid: `PDF-Processing`, `-pdf`, `pdf--processing`
@@ -175,7 +175,7 @@ description: Helps with PDFs.
 
 ## Validation
 
-Pi validates skills against the Agent Skills standard. Most issues produce warnings but still load the skill:
+DeepSeek Helmsman validates skills against the Agent Skills standard. Most issues produce warnings but still load the skill:
 
 - Name exceeds 64 characters or contains invalid characters
 - Name starts/ends with hyphen or has consecutive hyphens
@@ -227,5 +227,4 @@ cd /path/to/brave-search && npm install
 
 ## Skill Repositories
 
-- [Anthropic Skills](https://github.com/anthropics/skills) - Document processing (docx, pdf, pptx, xlsx), web development
-- [Pi Skills](https://github.com/badlogic/pi-skills) - Web search, browser automation, Google APIs, transcription
+Any repository following the Agent Skills directory format can be loaded through the `skills` setting or a package.

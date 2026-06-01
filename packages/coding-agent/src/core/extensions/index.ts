@@ -47,6 +47,7 @@ export type {
 	ContextUsage,
 	CustomToolCallEvent,
 	CustomToolResultEvent,
+	DeepSeekProviderName,
 	EditorFactory,
 	EditToolCallEvent,
 	EditToolResultEvent,

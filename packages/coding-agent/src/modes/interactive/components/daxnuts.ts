@@ -4,7 +4,7 @@
  * A heartfelt tribute to dax (@thdxr) for providing free Kimi K2.5 access via OpenCode.
  */
 
-import type { Component, TUI } from "@earendil-works/pi-tui";
+import type { Component, TUI } from "@deepseek-helmsman/tui";
 import { theme } from "../theme/theme.ts";
 
 // 32x32 RGB image of dax, hex encoded (3 bytes per pixel)
@@ -133,9 +133,9 @@ export class DaxnutsComponent implements Component {
 		// Fade in text after image is revealed
 		const textPhase = Math.max(0, this.tick - this.maxTicks * 0.6);
 		if (textPhase > 0 || this.tick >= this.maxTicks) {
-			lines.push(center(t.fg("accent", "Free Kimi K2.5 via OpenCode Zen")));
-			lines.push(center(t.fg("success", '"Powered by daxnuts"')));
-			lines.push(center(t.fg("muted", "— @thdxr")));
+			lines.push(center(t.fg("accent", "DeepSeek Helmsman")));
+			lines.push(center(t.fg("success", '"Powered by DeepSeek"')));
+			lines.push(center(t.fg("muted", "Coding agent for DeepSeek")));
 		} else {
 			lines.push("");
 			lines.push("");
@@ -144,8 +144,8 @@ export class DaxnutsComponent implements Component {
 
 		lines.push("");
 		if (textPhase > 2 || this.tick >= this.maxTicks) {
-			lines.push(center(t.fg("dim", "Try OpenCode")));
-			lines.push(center(t.fg("mdLink", "https://mistral.ai/news/mistral-vibe-2-0")));
+			lines.push(center(t.fg("dim", "Use DeepSeek")));
+			lines.push(center(t.fg("mdLink", "https://www.deepseek.com")));
 		} else {
 			lines.push("");
 			lines.push("");
