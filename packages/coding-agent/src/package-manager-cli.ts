@@ -543,9 +543,14 @@ export async function handlePackageCommand(args: string[]): Promise<boolean> {
 						return true;
 					}
 					const installMethod = detectInstallMethod();
-					if (process.platform === "win32" && installMethod !== "npm" && installMethod !== "pnpm") {
+					if (
+						process.platform === "win32" &&
+						installMethod !== "npm" &&
+						installMethod !== "pnpm" &&
+						installMethod !== "bun"
+					) {
 						console.error(
-							chalk.red(`${APP_NAME} self-update on Windows is only supported for npm and pnpm installs.`),
+							chalk.red(`${APP_NAME} self-update on Windows is only supported for Bun, npm, and pnpm installs.`),
 						);
 						console.error(chalk.dim(`Detected install method: ${installMethod}. Update ${APP_NAME} manually.`));
 						process.exitCode = 1;

@@ -4,10 +4,7 @@ import { getDocsPath } from "../config.ts";
 const UNKNOWN_PROVIDER = "unknown";
 
 export function getProviderLoginHelp(): string {
-	return [
-		"Set DEEPSEEK_API_KEY or use /login to store a DeepSeek API key. See:",
-		`  ${join(getDocsPath(), "models.md")}`,
-	].join("\n");
+	return ["Use /login to store a DeepSeek API key. See:", `  ${join(getDocsPath(), "models.md")}`].join("\n");
 }
 
 export function formatNoModelsAvailableMessage(): string {

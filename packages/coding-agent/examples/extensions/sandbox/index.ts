@@ -36,7 +36,7 @@
  *
  * Setup:
  * 1. Copy sandbox/ directory to ~/.deepseek-helmsman/agent/extensions/
- * 2. Run `npm install` in ~/.deepseek-helmsman/agent/extensions/sandbox/
+ * 2. Run `bun install` in ~/.deepseek-helmsman/agent/extensions/sandbox/
  *
  * Linux also requires: bubblewrap, socat, ripgrep
  */

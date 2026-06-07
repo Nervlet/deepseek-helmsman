@@ -162,7 +162,6 @@ cat README.md | deepseek-helmsman -p "Summarize this text"
 |--------|-------------|
 | `--provider <name>` | Provider id; only `deepseek` is supported |
 | `--model <pattern>` | Model pattern or ID; supports `deepseek/<id>` and optional `:<thinking>` |
-| `--api-key <key>` | API key, overriding environment variables |
 | `--thinking <level>` | `off`, `minimal`, `low`, `medium`, `high`, `xhigh` |
 | `--models <patterns>` | Comma-separated patterns for Ctrl+P cycling |
 | `--list-models [search]` | List available models |
@@ -268,7 +267,6 @@ deepseek-helmsman --exclude-tools ask_question
 
 | Variable | Description |
 |----------|-------------|
-| `DEEPSEEK_API_KEY` | DeepSeek API key |
 | `DEEPSEEK_HELMSMAN_CODING_AGENT_DIR` | Override config directory; default is `~/.deepseek-helmsman/agent` |
 | `DEEPSEEK_HELMSMAN_CODING_AGENT_SESSION_DIR` | Override session storage directory; overridden by `--session-dir` |
 | `DEEPSEEK_HELMSMAN_PACKAGE_DIR` | Override package directory, useful for Nix/Guix store paths |

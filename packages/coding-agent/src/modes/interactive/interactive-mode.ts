@@ -3638,7 +3638,7 @@ export class InteractiveMode {
 	showNewVersionNotification(release: LatestDeepSeekHelmsmanRelease): void {
 		const action = theme.fg("accent", `${APP_NAME} update`);
 		const updateInstruction = theme.fg("muted", `New version ${release.version} is available. Run `) + action;
-		const changelogUrl = "https://github.com/hanbing/deepseek-helmsman/releases";
+		const changelogUrl = "https://github.com/Nervlet/deepseek-helmsman/releases";
 		const changelogLink = getCapabilities().hyperlinks
 			? hyperlink(theme.fg("accent", "open changelog"), changelogUrl)
 			: theme.fg("accent", changelogUrl);
@@ -4583,9 +4583,7 @@ export class InteractiveMode {
 
 		const providerOptions = this.getLogoutProviderOptions();
 		if (providerOptions.length === 0) {
-			this.showStatus(
-				"No stored credentials to remove. /logout only removes credentials saved by /login; environment variables and models.json config are unchanged.",
-			);
+			this.showStatus("No stored credentials to remove. Use /login first.");
 			return;
 		}
 
@@ -4609,7 +4607,7 @@ export class InteractiveMode {
 						const message =
 							providerOption.authType === "oauth"
 								? `Logged out of ${providerOption.name}`
-								: `Removed stored API key for ${providerOption.name}. Environment variables and models.json config are unchanged.`;
+								: `Removed stored API key for ${providerOption.name}.`;
 						this.showStatus(message);
 					} catch (error: unknown) {
 						this.showError(`Logout failed: ${error instanceof Error ? error.message : String(error)}`);

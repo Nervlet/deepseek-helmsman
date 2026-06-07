@@ -37,11 +37,25 @@ import type { PackageSource, SettingsManager } from "./settings-manager.ts";
 const NETWORK_TIMEOUT_MS = 10000;
 const UPDATE_CHECK_CONCURRENCY = 4;
 const GIT_UPDATE_CONCURRENCY = 4;
+let defaultPackageManagerCommand: { command: string; args: string[] } | undefined;
 
 function isOfflineModeEnabled(): boolean {
 	const value = process.env.DEEPSEEK_HELMSMAN_OFFLINE;
 	if (!value) return false;
 	return value === "1" || value.toLowerCase() === "true" || value.toLowerCase() === "yes";
+}
+
+function commandExists(command: string): boolean {
+	const result = spawnProcessSync(command, ["--version"], {
+		encoding: "utf-8",
+		stdio: "ignore",
+	});
+	return result.status === 0;
+}
+
+function getDefaultPackageManagerCommand(): { command: string; args: string[] } {
+	defaultPackageManagerCommand ??= commandExists("bun") ? { command: "bun", args: [] } : { command: "npm", args: [] };
+	return defaultPackageManagerCommand;
 }
 
 export interface PathMetadata {
@@ -1448,13 +1462,17 @@ export class DefaultPackageManager implements PackageManager {
 
 	private async getLatestNpmVersion(packageName: string): Promise<string> {
 		const npmCommand = this.getNpmCommand();
-		const stdout = await this.runCommandCapture(
-			npmCommand.command,
-			[...npmCommand.args, "view", packageName, "version", "--json"],
-			{ cwd: this.cwd, timeoutMs: NETWORK_TIMEOUT_MS },
-		);
+		const packageManagerName = this.getPackageManagerName();
+		const packageManagerArgs =
+			packageManagerName === "bun"
+				? ["info", packageName, "version", "--json"]
+				: ["view", packageName, "version", "--json"];
+		const stdout = await this.runCommandCapture(npmCommand.command, [...npmCommand.args, ...packageManagerArgs], {
+			cwd: this.cwd,
+			timeoutMs: NETWORK_TIMEOUT_MS,
+		});
 		const raw = stdout.trim();
-		if (!raw) throw new Error("Empty response from npm view");
+		if (!raw) throw new Error("Empty response from package version lookup");
 		return JSON.parse(raw);
 	}
 
@@ -1669,7 +1687,7 @@ export class DefaultPackageManager implements PackageManager {
 	private getNpmCommand(): { command: string; args: string[] } {
 		const configuredCommand = this.settingsManager.getNpmCommand();
 		if (!configuredCommand || configuredCommand.length === 0) {
-			return { command: "npm", args: [] };
+			return getDefaultPackageManagerCommand();
 		}
 		const [command, ...args] = configuredCommand;
 		if (!command) {

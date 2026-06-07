@@ -17,11 +17,7 @@ import {
 
 // Custom auth storage location
 const authStorage = AuthStorage.create("/tmp/my-agent/auth.json");
-
-// Runtime API key override (not persisted)
-if (process.env.MY_DEEPSEEK_KEY) {
-	authStorage.setRuntimeApiKey("deepseek", process.env.MY_DEEPSEEK_KEY);
-}
+authStorage.set("deepseek", { type: "api_key", key: "sk-my-key" });
 
 // Model registry with no custom models.json
 const modelRegistry = ModelRegistry.inMemory(authStorage);

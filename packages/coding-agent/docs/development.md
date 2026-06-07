@@ -1,14 +1,14 @@
 # Development
 
-See [AGENTS.md](https://github.com/hanbing/deepseek-helmsman/blob/main/AGENTS.md) for additional guidelines.
+See [AGENTS.md](https://github.com/Nervlet/deepseek-helmsman/blob/main/AGENTS.md) for additional guidelines.
 
 ## Setup
 
 ```bash
-git clone https://github.com/hanbing/deepseek-helmsman
+git clone https://github.com/Nervlet/deepseek-helmsman
 cd deepseek-helmsman
-npm install
-npm run build
+bun install --ignore-scripts
+bun run build
 ```
 
 Run from source:
@@ -36,7 +36,7 @@ Change `name`, `configDir`, and `bin` field for your fork. Affects CLI banner, c
 
 ## Path Resolution
 
-Three execution modes: npm install, standalone binary, tsx from source.
+Three execution modes: Homebrew/GitHub Release binary, standalone local binary, Bun from source.
 
 **Always use `src/config.ts`** for package assets:
 
@@ -56,8 +56,8 @@ Never use `__dirname` directly for package assets.
 
 ```bash
 ./test.sh                         # Run non-LLM tests (no API keys needed)
-npm test                          # Run all tests
-npm test -- test/specific.test.ts # Run specific test
+bun run test                      # Run all tests
+bun vitest --run test/specific.test.ts # Run specific test from a package root
 ```
 
 ## Project Structure

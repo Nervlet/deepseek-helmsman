@@ -1,35 +1,29 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
-import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const packages = [
-	{ directory: "packages/ai", name: "@deepseek-helmsman/ai" },
-	{ directory: "packages/tui", name: "@deepseek-helmsman/tui" },
-	{ directory: "packages/agent", name: "@deepseek-helmsman/agent-core" },
-	{ directory: "packages/coding-agent", name: "@deepseek-helmsman/coding-agent" },
-];
+const packages = ["packages/ai", "packages/tui", "packages/agent", "packages/coding-agent"];
 
 function printUsage() {
-	console.log(`Usage: node scripts/local-release.mjs [options]
+	console.log(`Usage: bun scripts/local-release.mjs [options]
 
-Builds and packs the publishable packages, then installs the tarballs into an
-isolated directory outside the repository for local release testing.
+Builds a local Bun compiled binary release for the current platform into an
+isolated directory outside the repository.
 
 Options:
-  --out <dir>          Output directory. Defaults to a new directory under ${tmpdir()}
-  --force              Remove --out first if it already exists
-  --skip-check         Do not run npm run check before building
-  --skip-install       Only create tarballs; do not create isolated installs
-  --skip-bun-install   Do not create the isolated Bun install
-  --help               Show this help
+  --out <dir>      Output directory. Defaults to a new directory under ${tmpdir()}
+  --force          Remove --out first if it already exists
+  --skip-check     Do not run bun run check before building
+  --skip-build     Use existing package build output instead of rebuilding packages
+  --help           Show this help
 `);
 }
 
 function parseArgs() {
-	const options = { force: false, outDir: undefined, skipBunInstall: false, skipCheck: false, skipInstall: false };
+	const options = { force: false, outDir: undefined, skipBuild: false, skipCheck: false };
 	const args = process.argv.slice(2);
 
 	for (let i = 0; i < args.length; i++) {
@@ -46,12 +40,8 @@ function parseArgs() {
 			options.skipCheck = true;
 			continue;
 		}
-		if (arg === "--skip-install") {
-			options.skipInstall = true;
-			continue;
-		}
-		if (arg === "--skip-bun-install") {
-			options.skipBunInstall = true;
+		if (arg === "--skip-build") {
+			options.skipBuild = true;
 			continue;
 		}
 		if (arg === "--out") {
@@ -74,14 +64,12 @@ function run(command, args, options = {}) {
 		cwd: options.cwd,
 		encoding: "utf8",
 		shell: process.platform === "win32",
-		stdio: options.capture ? ["inherit", "pipe", "inherit"] : "inherit",
+		stdio: "inherit",
 	});
 
 	if (result.status !== 0) {
 		throw new Error(`Command failed: ${[command, ...args].join(" ")}`);
 	}
-
-	return result.stdout ?? "";
 }
 
 function readPackageJson(directory) {
@@ -119,11 +107,6 @@ function prepareOutputDirectory(options, repoRoot) {
 	return outDir;
 }
 
-function fileSpecifier(fromDirectory, file) {
-	const relativePath = relative(fromDirectory, file).replaceAll("\\", "/");
-	return `file:${relativePath.startsWith(".") ? relativePath : `./${relativePath}`}`;
-}
-
 function currentBinaryPlatform() {
 	if (process.platform === "win32") return process.arch === "arm64" ? "windows-arm64" : "windows-x64";
 	if (process.platform === "darwin") return process.arch === "arm64" ? "darwin-arm64" : "darwin-x64";
@@ -131,12 +114,12 @@ function currentBinaryPlatform() {
 	throw new Error(`Unsupported binary platform: ${process.platform} ${process.arch}`);
 }
 
-function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
+function buildLocalBinaryRelease(outDir) {
 	if (!commandExists("bun")) {
 		throw new Error("Bun is required for the local binary release build.");
 	}
 	const platform = currentBinaryPlatform();
-	const binaryBuildDirectory = join(archiveDirectory, "binary-build");
+	const buildDirectory = join(outDir, "binary-build");
 	run("./scripts/build-binaries.sh", [
 		"--skip-install",
 		"--skip-deps",
@@ -144,54 +127,18 @@ function buildBunBinaryRelease(targetDirectory, archiveDirectory) {
 		"--platform",
 		platform,
 		"--out",
-		binaryBuildDirectory,
+		buildDirectory,
 	]);
-	rmSync(targetDirectory, { force: true, recursive: true });
-	cpSync(join(binaryBuildDirectory, platform), targetDirectory, { recursive: true });
-	const archiveName = platform.startsWith("windows-") ? `deepseek-helmsman-${platform}.zip` : `deepseek-helmsman-${platform}.tar.gz`;
-	cpSync(join(binaryBuildDirectory, archiveName), join(archiveDirectory, archiveName));
-	return platform;
-}
 
-function createCliShim(installDirectory) {
-	const binDirectory = join(installDirectory, "node_modules", ".bin");
-	if (process.platform === "win32") {
-		if (existsSync(join(binDirectory, "deepseek-helmsman.cmd"))) {
-			writeFileSync(
-				join(installDirectory, "deepseek-helmsman.cmd"),
-				'@ECHO off\r\n"%~dp0node_modules\\.bin\\deepseek-helmsman.cmd" %*\r\n',
-			);
-			writeFileSync(
-				join(installDirectory, "deepseek-helmsman.ps1"),
-				'& "$PSScriptRoot/node_modules/.bin/deepseek-helmsman.ps1" @args\n',
-			);
-			return;
-		}
-		writeFileSync(
-			join(installDirectory, "deepseek-helmsman.cmd"),
-			'@ECHO off\r\n"%~dp0node_modules\\.bin\\deepseek-helmsman.exe" %*\r\n',
-		);
-		writeFileSync(
-			join(installDirectory, "deepseek-helmsman.ps1"),
-			'& "$PSScriptRoot/node_modules/.bin/deepseek-helmsman.exe" @args\n',
-		);
-		return;
-	}
-	symlinkSync(join("node_modules", ".bin", "deepseek-helmsman"), join(installDirectory, "deepseek-helmsman"));
-}
+	const binaryDirectory = join(outDir, "binary");
+	rmSync(binaryDirectory, { force: true, recursive: true });
+	cpSync(join(buildDirectory, platform), binaryDirectory, { recursive: true });
 
-function packPackage(pkg, tarballDirectory) {
-	const packageJson = readPackageJson(pkg.directory);
-	if (packageJson.name !== pkg.name) {
-		throw new Error(`${pkg.directory}/package.json has name ${packageJson.name}, expected ${pkg.name}`);
-	}
-
-	const output = run("npm", ["pack", "--json", "--pack-destination", tarballDirectory], {
-		capture: true,
-		cwd: pkg.directory,
-	});
-	const packed = JSON.parse(output)[0];
-	return join(tarballDirectory, packed.filename);
+	const archiveName = platform.startsWith("windows-")
+		? `deepseek-helmsman-${platform}.zip`
+		: `deepseek-helmsman-${platform}.tar.gz`;
+	cpSync(join(buildDirectory, archiveName), join(outDir, archiveName));
+	return { archiveName, binaryDirectory, platform };
 }
 
 const options = parseArgs();
@@ -203,86 +150,27 @@ if (rootPackageJson.name !== "deepseek-helmsman-monorepo") {
 }
 
 const outDir = prepareOutputDirectory(options, repoRoot);
-const tarballDirectory = join(outDir, "tarballs");
-const nodeInstallDirectory = join(outDir, "node");
-const bunInstallDirectory = join(outDir, "bun-install");
-const binaryDirectory = join(outDir, "bun");
-mkdirSync(tarballDirectory, { recursive: true });
 
 if (!options.skipCheck) {
-	run("npm", ["run", "check"], { cwd: repoRoot });
+	run("bun", ["run", "check"], { cwd: repoRoot });
 }
 
-for (const pkg of packages) {
-	run("npm", ["run", "clean"], { cwd: pkg.directory });
-	run("npm", ["run", "build"], { cwd: pkg.directory });
-}
-
-const tarballs = new Map();
-for (const pkg of packages) {
-	const tarball = packPackage(pkg, tarballDirectory);
-	tarballs.set(pkg.name, tarball);
-}
-
-let binaryPlatform;
-if (!options.skipInstall) {
-	binaryPlatform = buildBunBinaryRelease(binaryDirectory, outDir);
-
-	mkdirSync(nodeInstallDirectory, { recursive: true });
-	const dependencies = Object.fromEntries(
-		packages.map((pkg) => [pkg.name, fileSpecifier(nodeInstallDirectory, tarballs.get(pkg.name))]),
-	);
-	const installPackageJson = `${JSON.stringify({ private: true, dependencies, overrides: dependencies }, undefined, "\t")}\n`;
-	writeFileSync(join(nodeInstallDirectory, "package.json"), installPackageJson);
-
-	run("npm", ["install", "--omit=dev", "--ignore-scripts"], { cwd: nodeInstallDirectory });
-	createCliShim(nodeInstallDirectory);
-
-	if (!options.skipBunInstall) {
-		if (!commandExists("bun")) {
-			throw new Error("Bun is required for the isolated Bun install. Use --skip-bun-install to skip it.");
-		}
-		mkdirSync(bunInstallDirectory, { recursive: true });
-		const bunDependencies = Object.fromEntries(
-			packages.map((pkg) => [pkg.name, fileSpecifier(bunInstallDirectory, tarballs.get(pkg.name))]),
-		);
-		writeFileSync(join(bunInstallDirectory, "package.json"), `${JSON.stringify({ private: true, dependencies: bunDependencies, overrides: bunDependencies }, undefined, "\t")}\n`);
-		run("bun", ["install", "--production", "--ignore-scripts"], { cwd: bunInstallDirectory });
-		createCliShim(bunInstallDirectory);
+if (!options.skipBuild) {
+	for (const pkg of packages) {
+		run("bun", ["run", "clean"], { cwd: pkg });
+		run("bun", ["run", "build"], { cwd: pkg });
 	}
 }
 
-console.log("\nLocal release artifacts created:");
+const { archiveName, binaryDirectory, platform } = buildLocalBinaryRelease(outDir);
+
+console.log("\nLocal binary release artifacts created:");
 console.log(`  ${outDir}`);
-console.log("\nTarballs:");
-for (const tarball of tarballs.values()) {
-	console.log(`  ${tarball}`);
-}
-
-if (!options.skipInstall) {
-	console.log("\nLocal Bun binary release:");
-	console.log(`  ${binaryDirectory}`);
-	console.log(
-		`  ${join(outDir, `deepseek-helmsman-${binaryPlatform}.${String(binaryPlatform).startsWith("windows-") ? "zip" : "tar.gz"}`)}`,
-	);
-	console.log("\nRun the local Bun binary release from outside the repository:");
-	console.log(
-		`  ${join(binaryDirectory, String(binaryPlatform).startsWith("windows-") ? "deepseek-helmsman.exe" : "deepseek-helmsman")} --help`,
-	);
-
-	console.log("\nIsolated npm install:");
-	console.log(`  ${nodeInstallDirectory}`);
-	console.log("\nRun the locally packed npm CLI from outside the repository:");
-	console.log(
-		`  ${join(nodeInstallDirectory, process.platform === "win32" ? "deepseek-helmsman.cmd" : "deepseek-helmsman")} --help`,
-	);
-
-	if (!options.skipBunInstall) {
-		console.log("\nIsolated Bun package install:");
-		console.log(`  ${bunInstallDirectory}`);
-		console.log("\nRun the locally packed Bun package CLI from outside the repository:");
-		console.log(
-			`  ${join(bunInstallDirectory, process.platform === "win32" ? "deepseek-helmsman.cmd" : "deepseek-helmsman")} --help`,
-		);
-	}
-}
+console.log("\nArchive:");
+console.log(`  ${join(outDir, archiveName)}`);
+console.log("\nExtracted binary release:");
+console.log(`  ${binaryDirectory}`);
+console.log("\nRun the local binary release from outside the repository:");
+console.log(
+	`  ${join(binaryDirectory, platform.startsWith("windows-") ? "deepseek-helmsman.exe" : "deepseek-helmsman")} --help`,
+);

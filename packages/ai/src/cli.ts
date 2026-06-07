@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { createInterface } from "node:readline";
 import { existsSync, readFileSync, writeFileSync } from "fs";
@@ -78,7 +78,7 @@ async function main(): Promise<void> {
 
 	if (!command || command === "help" || command === "--help" || command === "-h") {
 		const providerList = PROVIDERS.map((p) => `  ${p.id.padEnd(20)} ${p.name}`).join("\n") || "  (none)";
-		console.log(`Usage: npx @deepseek-helmsman/ai <command> [oauth-id]
+		console.log(`Usage: bun packages/ai/src/cli.ts <command> [oauth-id]
 
 Commands:
   login [oauth-id]  Login to an extension-registered OAuth credential source
@@ -88,7 +88,7 @@ OAuth credential sources:
 ${providerList}
 
 Examples:
-  npx @deepseek-helmsman/ai list               # list OAuth credential sources
+  bun packages/ai/src/cli.ts list              # list OAuth credential sources
 `);
 		return;
 	}
@@ -108,7 +108,7 @@ Examples:
 	if (command === "login") {
 		let provider = args[1] as OAuthProviderId | undefined;
 		if (PROVIDERS.length === 0) {
-			console.error("No OAuth credential sources are registered. Use DEEPSEEK_API_KEY for DeepSeek.");
+			console.error("No OAuth credential sources are registered. Use /login in DeepSeek Helmsman for DeepSeek.");
 			process.exit(1);
 		}
 
@@ -133,7 +133,7 @@ Examples:
 
 		if (!PROVIDERS.some((p) => p.id === provider)) {
 			console.error(`Unknown OAuth credential source: ${provider}`);
-			console.error(`Use 'npx @deepseek-helmsman/ai list' to see available OAuth credential sources`);
+			console.error(`Use 'bun packages/ai/src/cli.ts list' to see available OAuth credential sources`);
 			process.exit(1);
 		}
 
@@ -143,7 +143,7 @@ Examples:
 	}
 
 	console.error(`Unknown command: ${command}`);
-	console.error(`Use 'npx @deepseek-helmsman/ai --help' for usage`);
+	console.error(`Use 'bun packages/ai/src/cli.ts --help' for usage`);
 	process.exit(1);
 }
 

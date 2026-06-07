@@ -115,83 +115,45 @@ describe("AuthStorage", () => {
 			expect(apiKey).toBeUndefined();
 		});
 
-		test("apiKey with $ prefix resolves to env value", async () => {
-			const originalEnv = process.env.TEST_AUTH_API_KEY_12345;
-			process.env.TEST_AUTH_API_KEY_12345 = "env-api-key-value";
+		test("apiKey with $ prefix is treated as a literal", async () => {
+			writeAuthJson({
+				deepseek: { type: "api_key", key: "$TEST_AUTH_API_KEY_12345" },
+			});
 
-			try {
-				writeAuthJson({
-					deepseek: { type: "api_key", key: "$TEST_AUTH_API_KEY_12345" },
-				});
+			authStorage = AuthStorage.create(authJsonPath);
+			const apiKey = await authStorage.getApiKey("deepseek");
 
-				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("deepseek");
-
-				expect(apiKey).toBe("env-api-key-value");
-			} finally {
-				if (originalEnv === undefined) {
-					delete process.env.TEST_AUTH_API_KEY_12345;
-				} else {
-					process.env.TEST_AUTH_API_KEY_12345 = originalEnv;
-				}
-			}
+			expect(apiKey).toBe("$TEST_AUTH_API_KEY_12345");
 		});
 
-		test("apiKey with braced env syntax resolves to env value", async () => {
-			const originalEnv = process.env.TEST_AUTH_BRACED_API_KEY_12345;
-			process.env.TEST_AUTH_BRACED_API_KEY_12345 = "braced-env-api-key-value";
+		test("apiKey with braced env-like syntax is treated as a literal", async () => {
 			const bracedKey = "$" + "{TEST_AUTH_BRACED_API_KEY_12345}";
 
-			try {
-				writeAuthJson({
-					deepseek: { type: "api_key", key: bracedKey },
-				});
+			writeAuthJson({
+				deepseek: { type: "api_key", key: bracedKey },
+			});
 
-				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("deepseek");
+			authStorage = AuthStorage.create(authJsonPath);
+			const apiKey = await authStorage.getApiKey("deepseek");
 
-				expect(apiKey).toBe("braced-env-api-key-value");
-			} finally {
-				if (originalEnv === undefined) {
-					delete process.env.TEST_AUTH_BRACED_API_KEY_12345;
-				} else {
-					process.env.TEST_AUTH_BRACED_API_KEY_12345 = originalEnv;
-				}
-			}
+			expect(apiKey).toBe(bracedKey);
 		});
 
-		test("apiKey interpolates braced env references inside literals", async () => {
-			const originalPartA = process.env.TEST_AUTH_INTERPOLATED_PART_A_12345;
-			const originalPartB = process.env.TEST_AUTH_INTERPOLATED_PART_B_12345;
-			process.env.TEST_AUTH_INTERPOLATED_PART_A_12345 = "left";
-			process.env.TEST_AUTH_INTERPOLATED_PART_B_12345 = "right";
+		test("apiKey does not interpolate braced env-like references inside literals", async () => {
 			const interpolatedKey = [
 				"$",
 				"{TEST_AUTH_INTERPOLATED_PART_A_12345}_$",
 				"{TEST_AUTH_INTERPOLATED_PART_B_12345}",
 			].join("");
 
-			try {
-				writeAuthJson({
-					deepseek: { type: "api_key", key: interpolatedKey },
-				});
+			writeAuthJson({
+				deepseek: { type: "api_key", key: interpolatedKey },
+			});
 
-				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("deepseek");
+			authStorage = AuthStorage.create(authJsonPath);
+			const apiKey = await authStorage.getApiKey("deepseek");
 
-				expect(apiKey).toBe("left_right");
-			} finally {
-				if (originalPartA === undefined) {
-					delete process.env.TEST_AUTH_INTERPOLATED_PART_A_12345;
-				} else {
-					process.env.TEST_AUTH_INTERPOLATED_PART_A_12345 = originalPartA;
-				}
-				if (originalPartB === undefined) {
-					delete process.env.TEST_AUTH_INTERPOLATED_PART_B_12345;
-				} else {
-					process.env.TEST_AUTH_INTERPOLATED_PART_B_12345 = originalPartB;
-				}
-			}
+			expect(apiKey).toBe(interpolatedKey);
 		});
 
 		test("apiKey with $$ prefix escapes a leading dollar", async () => {
@@ -205,24 +167,34 @@ describe("AuthStorage", () => {
 			expect(apiKey).toBe("$TEST_AUTH_API_KEY_12345");
 		});
 
-		test("apiKey with $! escapes a literal bang and still interpolates later env refs", async () => {
-			const originalEnv = process.env.TEST_AUTH_API_KEY_12345;
-			process.env.TEST_AUTH_API_KEY_12345 = "env-api-key-value";
+		test("apiKey with $! escapes a literal bang and leaves later env-like refs literal", async () => {
+			writeAuthJson({
+				deepseek: { type: "api_key", key: "$!literal-$TEST_AUTH_API_KEY_12345" },
+			});
+
+			authStorage = AuthStorage.create(authJsonPath);
+			const apiKey = await authStorage.getApiKey("deepseek");
+
+			expect(apiKey).toBe("!literal-$TEST_AUTH_API_KEY_12345");
+		});
+
+		test("DEEPSEEK_API_KEY environment variable is ignored", async () => {
+			const originalEnv = process.env.DEEPSEEK_API_KEY;
+			process.env.DEEPSEEK_API_KEY = "env-api-key-value";
 
 			try {
-				writeAuthJson({
-					deepseek: { type: "api_key", key: "$!literal-$TEST_AUTH_API_KEY_12345" },
-				});
+				writeAuthJson({});
 
 				authStorage = AuthStorage.create(authJsonPath);
-				const apiKey = await authStorage.getApiKey("deepseek");
 
-				expect(apiKey).toBe("!literal-env-api-key-value");
+				expect(await authStorage.getApiKey("deepseek")).toBeUndefined();
+				expect(authStorage.hasAuth("deepseek")).toBe(false);
+				expect(authStorage.getAuthStatus("deepseek")).toEqual({ configured: false });
 			} finally {
 				if (originalEnv === undefined) {
-					delete process.env.TEST_AUTH_API_KEY_12345;
+					delete process.env.DEEPSEEK_API_KEY;
 				} else {
-					process.env.TEST_AUTH_API_KEY_12345 = originalEnv;
+					process.env.DEEPSEEK_API_KEY = originalEnv;
 				}
 			}
 		});
@@ -402,36 +374,6 @@ describe("AuthStorage", () => {
 				const count = parseInt(readFileSync(counterFile, "utf-8").trim(), 10);
 				expect(count).toBe(1);
 			});
-
-			test("environment variables are not cached (changes are picked up)", async () => {
-				const envVarName = "TEST_AUTH_KEY_CACHE_TEST_98765";
-				const originalEnv = process.env[envVarName];
-
-				try {
-					process.env[envVarName] = "first-value";
-
-					writeAuthJson({
-						deepseek: { type: "api_key", key: `$${envVarName}` },
-					});
-
-					authStorage = AuthStorage.create(authJsonPath);
-
-					const key1 = await authStorage.getApiKey("deepseek");
-					expect(key1).toBe("first-value");
-
-					// Change env var
-					process.env[envVarName] = "second-value";
-
-					const key2 = await authStorage.getApiKey("deepseek");
-					expect(key2).toBe("second-value");
-				} finally {
-					if (originalEnv === undefined) {
-						delete process.env[envVarName];
-					} else {
-						process.env[envVarName] = originalEnv;
-					}
-				}
-			});
 		});
 	});
 
@@ -585,35 +527,6 @@ describe("AuthStorage", () => {
 			expect(JSON.stringify(authStorage.getAuthStatus("deepseek"))).not.toContain("secret-api-key");
 			expect(JSON.stringify(authStorage.getAuthStatus("external-entry"))).not.toContain("secret-access-token");
 			expect(JSON.stringify(authStorage.getAuthStatus("external-entry"))).not.toContain("secret-refresh-token");
-		});
-	});
-
-	describe("runtime overrides", () => {
-		test("runtime override takes priority over auth.json", async () => {
-			writeAuthJson({
-				deepseek: { type: "api_key", key: "!echo stored-key" },
-			});
-
-			authStorage = AuthStorage.create(authJsonPath);
-			authStorage.setRuntimeApiKey("deepseek", "runtime-key");
-
-			const apiKey = await authStorage.getApiKey("deepseek");
-
-			expect(apiKey).toBe("runtime-key");
-		});
-
-		test("removing runtime override falls back to auth.json", async () => {
-			writeAuthJson({
-				deepseek: { type: "api_key", key: "!echo stored-key" },
-			});
-
-			authStorage = AuthStorage.create(authJsonPath);
-			authStorage.setRuntimeApiKey("deepseek", "runtime-key");
-			authStorage.removeRuntimeApiKey("deepseek");
-
-			const apiKey = await authStorage.getApiKey("deepseek");
-
-			expect(apiKey).toBe("stored-key");
 		});
 	});
 });

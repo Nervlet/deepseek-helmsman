@@ -112,8 +112,8 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		// Set a runtime API key so validation passes
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		// Set a stored API key so validation passes
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 
 		session = new AgentSession({
 			agent,
@@ -237,7 +237,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 
 		const extensionsResult = await createTestExtensionsResult([
 			(extensionApi) => {
@@ -315,7 +315,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 
 		session = new AgentSession({
 			agent,
@@ -421,7 +421,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 
 		session = new AgentSession({
 			agent,
@@ -568,7 +568,7 @@ describe("AgentSession concurrent prompt guard", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 
 		session = new AgentSession({
 			agent,

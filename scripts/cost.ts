@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import * as fs from "fs";
 import * as path from "path";
@@ -14,7 +14,7 @@ for (let i = 0; i < args.length; i++) {
 	} else if (args[i] === "--days" || args[i] === "-n") {
 		days = parseInt(args[++i], 10);
 	} else if (args[i] === "--help" || args[i] === "-h") {
-		console.log(`Usage: cost.ts -d <path> -n <days>
+		console.log(`Usage: bun scripts/cost.ts -d <path> -n <days>
   -d, --dir <path>   Directory path (required)
   -n, --days <num>   Number of days to track (required)
   -h, --help         Show this help`);

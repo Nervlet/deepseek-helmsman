@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { homedir } from "node:os";
@@ -126,7 +126,7 @@ function parseArgs(): Args {
 		} else if (arg === "--sessions-base" && args[i + 1]) {
 			sessionsBase = resolve(args[++i]);
 		} else if (arg === "--help" || arg === "-h") {
-			console.log(`Usage: scripts/stats.ts [options]
+			console.log(`Usage: bun scripts/stats.ts [options]
 
 Options:
   -n, --days <days>         Number of local calendar days to include (default: 7)

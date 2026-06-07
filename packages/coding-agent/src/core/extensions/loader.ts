@@ -60,7 +60,7 @@ const VIRTUAL_MODULES: Record<string, unknown> = {
 const require = createRequire(import.meta.url);
 
 /**
- * Get aliases for jiti (used in Node.js/development mode).
+ * Get aliases for jiti (used in filesystem/source mode).
  * In Bun binary mode, virtualModules is used instead.
  */
 let _aliases: Record<string, string> | null = null;
@@ -325,7 +325,7 @@ async function loadExtensionModule(extensionPath: string) {
 		moduleCache: false,
 		// In Bun binary: use virtualModules for bundled packages (no filesystem resolution)
 		// Also disable tryNative so jiti handles ALL imports (not just the entry point)
-		// In Node.js/dev: use aliases to resolve to node_modules paths
+		// In filesystem/source mode: use aliases to resolve to node_modules paths
 		...(isBunBinary ? { virtualModules: VIRTUAL_MODULES, tryNative: false } : { alias: getAliases() }),
 	});
 

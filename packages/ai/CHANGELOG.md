@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Removed automatic API-key discovery from environment variables; stream helpers now require explicit credentials from the caller.
+
 ## [0.78.0] - 2026-05-29
 
 ### Breaking Changes

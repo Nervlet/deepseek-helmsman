@@ -28,11 +28,10 @@
 	],
 	"scripts": {
 		"clean": "shx rm -rf dist",
-		"generate-models": "node scripts/generate-models.ts",
-		"generate-image-models": "node scripts/generate-image-models.ts",
-		"build": "npm run generate-models && npm run generate-image-models && tsgo -p tsconfig.build.json",
-		"test": "vitest --run",
-		"prepublishOnly": "npm run clean && npm run build"
+		"generate-models": "bun scripts/generate-models.ts",
+		"generate-image-models": "bun scripts/generate-image-models.ts",
+		"build": "bun run generate-models && bun run generate-image-models && tsgo -p tsconfig.build.json",
+		"test": "vitest --run"
 	},
 	"dependencies": {
 		"openai": "6.26.0",
@@ -49,11 +48,11 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/hanbing/deepseek-helmsman.git",
+		"url": "git+https://github.com/Nervlet/deepseek-helmsman.git",
 		"directory": "packages/ai"
 	},
 	"engines": {
-		"node": ">=22.19.0"
+		"bun": ">=1.3.10"
 	},
 	"devDependencies": {
 		"@types/node": "24.12.4",

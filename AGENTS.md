@@ -25,8 +25,8 @@
 
 ## Commands
 
-- After code changes (not docs): `npm run check` (full output, no tail). Fix all errors, warnings, and infos before committing. Does not run tests.
-- Never run `npm run build` or `npm test` unless requested by the user.
+- After code changes (not docs): `bun run check` (full output, no tail). Fix all errors, warnings, and infos before committing. Does not run tests.
+- Never run `bun run build` or `bun run test` unless requested by the user.
 - Never run the full vitest suite directly: it includes e2e tests that activate when endpoint/auth env vars are present. For all non-e2e tests, run `./test.sh` from the repo root. Otherwise run specific tests from the package root: `node ../../node_modules/vitest/dist/cli.js --run test/specific.test.ts`.
 - If you create or modify a test file, run it and iterate on test or implementation until it passes.
 - For `packages/coding-agent/test/suite/`, use `test/suite/harness.ts` + the faux provider. No real provider APIs, keys, or paid tokens.
@@ -36,11 +36,10 @@
 
 ## Dependency and Install Security
 
-- Treat npm dep and lockfile changes as reviewed code. Direct external deps stay pinned to exact versions.
-- Hydrate/update locally with `npm install --ignore-scripts`; clean/CI-style with `npm ci --ignore-scripts`. Don't run lifecycle scripts unless the user asks.
-- If dep metadata changes, refresh `package-lock.json` with `npm install --package-lock-only --ignore-scripts`.
-- If `packages/coding-agent/npm-shrinkwrap.json` needs regen, run `node scripts/generate-coding-agent-shrinkwrap.mjs` (verify with `--check` or `npm run check`). New deps with lifecycle scripts require review and an explicit allowlist entry in that script; never add one silently.
-- Pre-commit blocks lockfile commits unless `DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1`. Don't bypass unless the user wants the lockfile change committed.
+- Treat Bun dependency and lockfile changes as reviewed code. Direct external deps stay pinned to exact versions.
+- Hydrate/update locally with `bun install --ignore-scripts`; clean/CI-style with `bun install --frozen-lockfile --ignore-scripts`. Don't run lifecycle scripts unless the user asks.
+- If dep metadata changes, refresh `bun.lock` with `bun install --lockfile-only --ignore-scripts`.
+- Pre-commit blocks `bun.lock` commits unless `DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1`. Don't bypass unless the user wants the lockfile change committed.
 
 ## Git
 
@@ -113,8 +112,8 @@ Rules:
 
 Attribution:
 
-- Internal (from issues): `Fixed foo bar ([#123](https://github.com/hanbing/deepseek-helmsman/issues/123))`
-- External contributions: `Added feature X ([#456](https://github.com/hanbing/deepseek-helmsman/pull/456) by [@username](https://github.com/username))`
+- Internal (from issues): `Fixed foo bar ([#123](https://github.com/Nervlet/deepseek-helmsman/issues/123))`
+- External contributions: `Added feature X ([#456](https://github.com/Nervlet/deepseek-helmsman/pull/456) by [@username](https://github.com/username))`
 
 ## Releasing
 
@@ -122,39 +121,51 @@ Attribution:
 
 1. **Update CHANGELOGs**: ask the user whether they ran the `/cl` prompt on the latest commit on `main`. If not, they must run `/cl` first to audit and update each package's `[Unreleased]` section before releasing.
 
-2. **Local smoke test**: build an unpublished release and smoke test from outside the repo (so it can't resolve workspace files):
+2. **Local smoke test**: build an unpublished binary release and smoke test from outside the repo (so it can't resolve workspace files):
    ```bash
-   npm run release:local -- --out /tmp/deepseek-helmsman-local-release --force
+   bun run release:local -- --out /tmp/deepseek-helmsman-local-release --force
    cd /tmp
 
-   # Node package install smoke tests
-   /tmp/deepseek-helmsman-local-release/node/deepseek-helmsman --help
-   /tmp/deepseek-helmsman-local-release/node/deepseek-helmsman --version
-   /tmp/deepseek-helmsman-local-release/node/deepseek-helmsman --list-models
-   /tmp/deepseek-helmsman-local-release/node/deepseek-helmsman -p "Say exactly: ok"
-   /tmp/deepseek-helmsman-local-release/node/deepseek-helmsman
-
-   # Bun binary smoke tests
-   /tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman --help
-   /tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman --version
-   /tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman --list-models
-   /tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman -p "Say exactly: ok"
-   /tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman
+   # Bun compiled binary smoke tests
+   /tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman --help
+   /tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman --version
+   /tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman --list-models
+   /tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman -p "Say exactly: ok"
+   /tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman
    ```
-   Verify both Node and Bun startup, model/account listing, interactive startup, and at least one real prompt with the intended default provider. The bare commands `/tmp/deepseek-helmsman-local-release/node/deepseek-helmsman` and `/tmp/deepseek-helmsman-local-release/bun/deepseek-helmsman` start interactive mode; run each in tmux, submit a prompt, and wait for the model reply before considering the interactive smoke test passed. Failures are release blockers unless the user explicitly accepts the risk.
+   Verify binary startup, model/account listing, interactive startup, and at least one real prompt with the intended default provider. The bare command `/tmp/deepseek-helmsman-local-release/binary/deepseek-helmsman` starts interactive mode; run it in tmux, submit a prompt, and wait for the model reply before considering the interactive smoke test passed. Failures are release blockers unless the user explicitly accepts the risk.
+
+   Optional local Homebrew formula smoke test:
+   ```bash
+   bun run homebrew:smoke-local
+   ```
+   This uses fake local release archives and a temporary local Homebrew tap to validate formula extraction, wrapper installation, `brew test`, `--version`, `--help`, and `--list-models`. It refuses to run if `deepseek-helmsman` is already installed by Homebrew and uninstalls its fake package and tap before exiting.
 
 3. **Run the release script**:
    ```bash
-   DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1 npm_config_min_release_age=0 npm run release:patch    # fixes + additions
-   DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1 npm_config_min_release_age=0 npm run release:minor    # breaking changes
+   bun run release:check-prereqs
+   DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1 BUN_CONFIG_MINIMUM_RELEASE_AGE=0 bun run release:patch    # fixes + additions
+   DEEPSEEK_HELMSMAN_ALLOW_LOCKFILE_CHANGE=1 BUN_CONFIG_MINIMUM_RELEASE_AGE=0 bun run release:minor    # breaking changes
    ```
-   Use `npm_config_min_release_age=0` only for the release command. The repo's normal npm age gate can otherwise block the release lockfile refresh when the current workspace package version was published recently. Review any lockfile or shrinkwrap diffs the release creates before push.
+   Use `BUN_CONFIG_MINIMUM_RELEASE_AGE=0` only for the release command. The repo's normal Bun age gate can otherwise block lockfile refreshes when the current workspace package version was published recently. Review lockfile diffs before push.
 
-   The release script bumps all package versions, updates changelogs, regenerates release artifacts, runs `npm run check`, commits `Release vX.Y.Z`, tags `vX.Y.Z`, adds fresh `## [Unreleased]` changelog sections, commits `Add [Unreleased] section for next cycle`, then pushes `main` and the tag. Do not rerun the release script after a tag was pushed.
+   The release script bumps all package versions, updates changelogs, regenerates release artifacts, runs `bun run check`, commits `Release vX.Y.Z`, tags `vX.Y.Z`, adds fresh `## [Unreleased]` changelog sections, commits `Add [Unreleased] section for next cycle`, then pushes `main` and the tag. Do not rerun the release script after a tag was pushed.
 
-4. **CI publishes npm packages**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The `publish-npm` job uses npm trusted publishing through GitHub Actions OIDC with environment `npm-publish`; no local `npm publish`, `npm whoami`, OTP, or WebAuthn flow is required.
+4. **CI publishes application binaries**: pushing the `vX.Y.Z` tag triggers `.github/workflows/build-binaries.yml`. The workflow creates the GitHub Release, uploads platform archives, updates the Homebrew tap formula, and runs a Homebrew install smoke test on macOS. Before releasing, create the default tap repository `Nervlet/homebrew-deepseek-helmsman` or configure `HOMEBREW_TAP_REPOSITORY`/`HOMEBREW_TAP_NAME`/`HOMEBREW_TAP_BRANCH` to point at an existing tap. Configure `HOMEBREW_TAP_TOKEN` with read/write access to that tap; the workflow fails before building binaries if the token is missing or cannot access the tap repository.
 
-5. **If CI publish fails**: inspect the failed `publish-npm` job. The publish helper is idempotent and skips package versions already present on npm, so rerun the tag workflow after fixing CI or transient npm issues. Do not rerun `npm run release:patch` or `npm run release:minor` for the same version.
+5. **Manual Homebrew install smoke test**: after the tag workflow succeeds, optionally repeat the install from the tap on a machine outside the repo:
+   ```bash
+   brew update
+   brew install Nervlet/deepseek-helmsman/deepseek-helmsman
+   deepseek-helmsman --help
+   deepseek-helmsman --version
+   deepseek-helmsman --list-models
+   deepseek-helmsman -p "Say exactly: ok"
+   deepseek-helmsman
+   ```
+   The bare `deepseek-helmsman` command starts interactive mode; run it in tmux, submit a prompt, and wait for the model reply. Homebrew install, CLI startup, model/account listing, interactive startup, and one real prompt are release blockers unless the user explicitly accepts the risk.
+
+6. **If CI publish fails**: inspect `.github/workflows/build-binaries.yml`. GitHub Release uploads are clobber-safe, and the Homebrew tap updater is idempotent when the formula already matches. Rerun the tag workflow after fixing CI, release asset, or tap authentication issues. Do not rerun `bun run release:patch` or `bun run release:minor` for the same version.
 
 ## User Override
 

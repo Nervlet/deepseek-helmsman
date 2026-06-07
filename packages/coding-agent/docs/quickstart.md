@@ -4,30 +4,20 @@ This page gets you from install to a useful first DeepSeek Helmsman session.
 
 ## Install
 
-DeepSeek Helmsman is distributed as an npm package:
+DeepSeek Helmsman is distributed as a Bun compiled application binary. Homebrew is the preferred installer:
 
 ```bash
-npm install -g --ignore-scripts @deepseek-helmsman/coding-agent
+brew install Nervlet/deepseek-helmsman/deepseek-helmsman
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. DeepSeek Helmsman does not require install scripts for normal npm installs.
+You can also download the platform archive from GitHub Releases, extract it, and put the `deepseek-helmsman` executable on your `PATH`.
 
 ### Uninstall
 
-Use the package manager that installed DeepSeek Helmsman:
+Use the installer that installed DeepSeek Helmsman:
 
 ```bash
-# npm install -g
-npm uninstall -g @deepseek-helmsman/coding-agent
-
-# pnpm
-pnpm remove -g @deepseek-helmsman/coding-agent
-
-# Yarn
-yarn global remove @deepseek-helmsman/coding-agent
-
-# Bun
-bun uninstall -g @deepseek-helmsman/coding-agent
+brew uninstall deepseek-helmsman
 ```
 
 Uninstalling the CLI leaves settings, credentials, sessions, and installed packages in `~/.deepseek-helmsman/agent/`.
@@ -43,14 +33,13 @@ deepseek-helmsman
 
 DeepSeek Helmsman uses DeepSeek API-key authentication.
 
-Set an API key before launching:
+Start DeepSeek Helmsman, then run `/login` and select DeepSeek:
 
 ```bash
-export DEEPSEEK_API_KEY=sk-...
 deepseek-helmsman
 ```
 
-You can also run `/login` and select DeepSeek to store the key in `~/.deepseek-helmsman/agent/auth.json`.
+Enter your DeepSeek API key when prompted. Credentials are stored in `~/.deepseek-helmsman/agent/auth.json`.
 
 See [Providers](providers.md) for authentication details.
 
@@ -78,7 +67,7 @@ DeepSeek Helmsman loads context files at startup. Add an `AGENTS.md` file to tel
 ```markdown
 # Project Instructions
 
-- Run `npm run check` after code changes.
+- Run `bun run check` after code changes.
 - Do not run production migrations locally.
 - Keep responses concise.
 ```
@@ -108,7 +97,7 @@ Images can be pasted with Ctrl+V (Alt+V on Windows) or dragged into supported te
 In interactive mode:
 
 ```text
-!npm run lint
+!bun run lint
 ```
 
 The command output is sent to the model. Use `!!command` to run a command without adding its output to the model context.

@@ -45,7 +45,7 @@ describe("AgentSessionRuntime session lifecycle events", () => {
 		faux.setResponses([fauxAssistantMessage("one"), fauxAssistantMessage("two"), fauxAssistantMessage("three")]);
 
 		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		authStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 
 		const runtimeOptions = {
 			agentDir: tempDir,

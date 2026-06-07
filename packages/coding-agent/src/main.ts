@@ -413,9 +413,6 @@ function buildSessionOptions(
 		}));
 	}
 
-	// API key from CLI - set in authStorage
-	// (handled by caller before createAgentSession)
-
 	// Tools
 	if (parsed.noTools) {
 		options.noTools = "all";
@@ -637,17 +634,6 @@ export async function main(args: string[], options?: MainOptions) {
 			settingsManager,
 		);
 		diagnostics.push(...sessionOptionDiagnostics);
-
-		if (parsed.apiKey) {
-			if (!sessionOptions.model) {
-				diagnostics.push({
-					type: "error",
-					message: "--api-key requires a model to be specified via --model, --provider/--model, or --models",
-				});
-			} else {
-				authStorage.setRuntimeApiKey(sessionOptions.model.provider, parsed.apiKey);
-			}
-		}
 
 		const created = await createAgentSessionFromServices({
 			services,

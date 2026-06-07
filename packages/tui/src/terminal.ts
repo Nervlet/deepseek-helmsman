@@ -370,7 +370,7 @@ export class ProcessTerminal implements Terminal {
 			if (arch !== "x64" && arch !== "arm64") return;
 
 			// Dynamic require so non-Windows and bundled/browser paths never load the
-			// native helper. In the npm package native/ is next to dist/; in compiled
+			// native helper. In package builds native/ is next to dist/; in compiled
 			// binary archives native/ is copied next to the executable.
 			const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 			const nativePath = path.join("native", "win32", "prebuilds", `win32-${arch}`, "win32-console-mode.node");

@@ -26,14 +26,13 @@ Route the built-in DeepSeek provider through a proxy without redefining every mo
 {
   "providers": {
     "deepseek": {
-      "baseUrl": "https://proxy.example.com/v1",
-      "apiKey": "$DEEPSEEK_API_KEY"
+      "baseUrl": "https://proxy.example.com/v1"
     }
   }
 }
 ```
 
-The provider still uses the OpenAI-compatible chat completions API shape and DeepSeek compatibility defaults.
+The provider still uses the OpenAI-compatible chat completions API shape and DeepSeek compatibility defaults. Authentication still comes from `/login`.
 
 ## Model Overrides
 
@@ -66,7 +65,6 @@ Add a DeepSeek-compatible model under the `deepseek` provider:
   "providers": {
     "deepseek": {
       "baseUrl": "https://api.deepseek.com",
-      "apiKey": "$DEEPSEEK_API_KEY",
       "api": "openai-completions",
       "models": [
         {
@@ -88,14 +86,15 @@ DeepSeek-compatible model entries are merged by `id`. If a model uses the same `
 
 ## Value Resolution
 
-`apiKey` and `headers` support command execution, environment interpolation, and literals:
+API keys are not read from `models.json`; use `/login` so the key is stored in `auth.json`.
+
+Custom `headers` support command execution and literals:
 
 - `"!command"` executes a shell command and uses stdout.
-- `"$ENV_VAR"` and `"${ENV_VAR}"` read environment variables.
 - `"$$"` emits a literal `$`.
 - `"$!"` emits a literal `!`.
 
-For `models.json`, shell commands are resolved at request time. If a command is slow, rate-limited, or should reuse stale values on transient failures, wrap it in a script that implements that behavior.
+For `models.json`, shell commands are resolved at request time. If a command is slow, rate-limited, or should reuse stale values on transient failures, wrap it in a script that implements that behavior. `$ENV_VAR` and `${ENV_VAR}` are treated as literal text.
 
 ## Thinking Levels
 

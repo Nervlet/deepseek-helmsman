@@ -48,7 +48,7 @@ describe.skipIf(!API_KEY)("AgentSession forking", () => {
 		const model = getModel("deepseek", "deepseek-v4-pro")!;
 		sessionManager = noSession ? SessionManager.inMemory(tempDir) : SessionManager.create(tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
-		authStorage.setRuntimeApiKey("deepseek", API_KEY!);
+		authStorage.set("deepseek", { type: "api_key", key: API_KEY! });
 
 		const servicesOptions = {
 			agentDir: tempDir,

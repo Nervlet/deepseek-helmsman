@@ -1,6 +1,6 @@
 import { getDeepSeekHelmsmanUserAgent } from "./deepseek-helmsman-user-agent.ts";
 
-const LATEST_VERSION_URL = "https://api.github.com/repos/hanbing/deepseek-helmsman/releases/latest";
+const LATEST_VERSION_URL = "https://api.github.com/repos/Nervlet/deepseek-helmsman/releases/latest";
 const DEFAULT_VERSION_CHECK_TIMEOUT_MS = 10000;
 
 export interface LatestDeepSeekHelmsmanRelease {

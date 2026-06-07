@@ -81,7 +81,7 @@ describe("createAgentSession stream options", () => {
 		const settingsManager = SettingsManager.inMemory(settings);
 
 		const authStorage = AuthStorage.create(join(agentDir, "auth.json"));
-		authStorage.setRuntimeApiKey(model.provider, "test-api-key");
+		authStorage.set(model.provider, { type: "api_key", key: "test-api-key" });
 		const modelRegistry = ModelRegistry.create(authStorage, join(agentDir, "models.json"));
 		let capturedOptions: SimpleStreamOptions | undefined;
 

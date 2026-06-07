@@ -82,7 +82,7 @@ Use `/reload` to reload extensions in auto-discovered locations.
 | `@deepseek-helmsman/tui` | TUI components for custom renderers |
 | `typebox` | Tool parameter schemas |
 
-Node.js built-ins such as `node:fs` and `node:path` are available. Third-party packages work when installed next to the extension or bundled in an installed package.
+Node-compatible built-ins such as `node:fs` and `node:path` are available under Bun. Third-party packages work when installed next to the extension or bundled in an installed package.
 
 ## Factory
 
@@ -248,7 +248,6 @@ For DeepSeek-compatible private endpoints, prefer the existing `openai-completio
 ```typescript
 api.registerProvider("deepseek", {
   baseUrl: "https://deepseek.internal/v1",
-  apiKey: "$DEEPSEEK_API_KEY",
   api: "openai-completions",
   models: [
     {

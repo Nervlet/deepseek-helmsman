@@ -37,13 +37,9 @@ session.subscribe((event) => {
 await session.prompt("What files are in the current directory?");
 ```
 
-## Installation
+## Source Checkout Usage
 
-```bash
-npm install @deepseek-helmsman/coding-agent
-```
-
-The SDK is included in the main package. No separate installation needed.
+The SDK APIs are internal to this application repository. Use a source checkout for local integrations and examples; DeepSeek Helmsman is distributed as an application binary, not as a published library package.
 
 ## Core Concepts
 
@@ -409,10 +405,8 @@ If no model is provided:
 ### API Keys and OAuth
 
 API key resolution priority (handled by AuthStorage):
-1. Runtime overrides (via `setRuntimeApiKey`, not persisted)
-2. Stored credentials in `auth.json` (API keys or OAuth tokens)
-3. Environment variables (`DEEPSEEK_API_KEY`)
-4. Fallback resolver (for DeepSeek provider overrides from `models.json`)
+1. Stored API key credentials in `auth.json`
+2. Stored OAuth credentials in `auth.json`, if an extension registers OAuth support
 
 ```typescript
 import { AuthStorage, ModelRegistry } from "@deepseek-helmsman/coding-agent";
@@ -421,14 +415,14 @@ import { AuthStorage, ModelRegistry } from "@deepseek-helmsman/coding-agent";
 const authStorage = AuthStorage.create();
 const modelRegistry = ModelRegistry.create(authStorage);
 
+// Persist a DeepSeek API key, equivalent to /login
+authStorage.set("deepseek", { type: "api_key", key: "sk-..." });
+
 const { session } = await createAgentSession({
   sessionManager: SessionManager.inMemory(),
   authStorage,
   modelRegistry,
 });
-
-// Runtime API key override (not persisted to disk)
-authStorage.setRuntimeApiKey("deepseek", "sk-my-temp-key");
 
 // Custom auth storage location
 const customAuth = AuthStorage.create("/my/app/auth.json");
@@ -890,11 +884,7 @@ import {
 
 // Set up auth storage (custom location)
 const authStorage = AuthStorage.create("/custom/agent/auth.json");
-
-// Runtime API key override (not persisted)
-if (process.env.MY_KEY) {
-  authStorage.setRuntimeApiKey("deepseek", process.env.MY_KEY);
-}
+authStorage.set("deepseek", { type: "api_key", key: "sk-..." });
 
 // Model registry (no models.json)
 const modelRegistry = ModelRegistry.create(authStorage);
@@ -1081,7 +1071,7 @@ See [RPC documentation](rpc.md) for the JSON protocol.
 
 The SDK is preferred when:
 - You want type safety
-- You're in the same Node.js process
+- You're in the same Bun process
 - You need direct access to agent state
 - You want to customize tools/extensions programmatically
 

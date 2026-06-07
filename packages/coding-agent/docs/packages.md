@@ -61,13 +61,14 @@ npm:pkg
 - Versioned specs are pinned and skipped by package updates (`deepseek-helmsman update`, `deepseek-helmsman update --extensions`).
 - User installs go under `~/.deepseek-helmsman/agent/npm/`.
 - Project installs go under `.deepseek-helmsman/npm/`.
-- Set `npmCommand` in `settings.json` to pin npm package lookup and install operations to a specific wrapper command such as `mise` or `asdf`.
+- Package lookup and install operations use Bun by default when available, with npm fallback.
+- Set `npmCommand` in `settings.json` to pin those operations to a specific package manager or wrapper command such as `mise` or `asdf`.
 
 Example:
 
 ```json
 {
-  "npmCommand": ["mise", "exec", "node@20", "--", "npm"]
+  "npmCommand": ["mise", "exec", "bun@1", "--", "bun"]
 }
 ```
 
@@ -88,7 +89,7 @@ ssh://git@github.com/user/repo@v1
 - Refs are pinned tags or commits. `deepseek-helmsman update` and `deepseek-helmsman update --extensions` do not move them to newer refs, but they do reconcile an existing clone to the configured ref.
 - Use `deepseek-helmsman install git:host/user/repo@new-ref` to update settings and move an existing package to a new pinned ref.
 - Cloned to `~/.deepseek-helmsman/agent/git/<host>/<path>` (global) or `.deepseek-helmsman/git/<host>/<path>` (project).
-- When reconciliation changes the checkout, DeepSeek Helmsman resets and cleans the clone, then runs `npm install` if `package.json` exists.
+- When reconciliation changes the checkout, DeepSeek Helmsman resets and cleans the clone, then runs the configured package manager's `install` if `package.json` exists.
 
 **SSH examples:**
 ```bash
@@ -164,7 +165,7 @@ If no manifest is present, DeepSeek Helmsman auto-discovers resources from these
 
 ## Dependencies
 
-Third party runtime dependencies belong in `dependencies` in `package.json`. Dependencies that do not register extensions, skills, prompt templates, or themes also belong in `dependencies`. When DeepSeek Helmsman installs a package from npm or git, it runs `npm install`, so those dependencies are installed automatically.
+Third party runtime dependencies belong in `dependencies` in `package.json`. Dependencies that do not register extensions, skills, prompt templates, or themes also belong in `dependencies`. When DeepSeek Helmsman installs a package from npm or git, it runs the configured package manager's `install`, so those dependencies are installed automatically.
 
 DeepSeek Helmsman bundles core packages for extensions and skills. If you import any of these, list them in `peerDependencies` with a `"*"` range and do not bundle them: `@deepseek-helmsman/ai`, `@deepseek-helmsman/agent-core`, `@deepseek-helmsman/coding-agent`, `@deepseek-helmsman/tui`, `typebox`.
 

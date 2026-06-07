@@ -1,17 +1,20 @@
 # Providers
 
-DeepSeek Helmsman is a DeepSeek-only fork. The only supported provider is `deepseek`, and the only built-in credential source is `DEEPSEEK_API_KEY` or the `deepseek` entry in `auth.json`.
+DeepSeek Helmsman is a DeepSeek-only fork. The only supported provider is `deepseek`, and the built-in credential source is the `deepseek` entry in `auth.json`.
 
 ## API Key
 
-Set the key in your shell:
+Store the key interactively with `/login`. Credentials are written to `~/.deepseek-helmsman/agent/auth.json` with user-only permissions.
 
 ```bash
-export DEEPSEEK_API_KEY=sk-...
 deepseek-helmsman
 ```
 
-Or store it interactively with `/login`. Credentials are written to `~/.deepseek-helmsman/agent/auth.json` with user-only permissions.
+Then enter:
+
+```text
+/login
+```
 
 ```json
 {
@@ -23,14 +26,12 @@ Or store it interactively with `/login`. Credentials are written to `~/.deepseek
 
 Credential lookup order:
 
-1. CLI `--api-key`
-2. `auth.json` entry for `deepseek`
-3. `DEEPSEEK_API_KEY`
+1. `auth.json` API key entry for `deepseek`
+2. `auth.json` OAuth entry for `deepseek`, if an extension registers OAuth support
 
-The `auth.json` key field supports the same value syntax as settings:
+The `auth.json` key field supports:
 
 - `"!command"` executes a shell command and uses stdout.
-- `"$ENV_VAR"` and `"${ENV_VAR}"` read environment variables.
 - `"$$"` emits a literal `$`.
 - `"$!"` emits a literal `!`.
 

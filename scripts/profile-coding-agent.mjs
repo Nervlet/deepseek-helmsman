@@ -1,3 +1,5 @@
+#!/usr/bin/env bun
+
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -17,13 +19,13 @@ const startupBenchmarkEnvName = "DEEPSEEK_HELMSMAN_STARTUP_BENCHMARK";
 
 function printHelp() {
 	console.log(`Usage:
-  node scripts/profile-coding-agent-node.mjs [options]
+  bun scripts/profile-coding-agent.mjs [options]
 
 Profiles coding-agent startup with the runtime selected below:
-- npm run profile:tui     -> builds packages/coding-agent and profiles TUI startup with Node
-- npm run profile:rpc     -> builds packages/coding-agent and profiles RPC startup with Node
-- bun run profile:tui     -> profiles TUI startup from src/cli.ts directly with Bun
-- bun run profile:rpc     -> profiles RPC startup from src/cli.ts directly with Bun
+- bun run profile:tui                  -> profiles TUI startup from src/cli.ts directly with Bun
+- bun run profile:rpc                  -> profiles RPC startup from src/cli.ts directly with Bun
+- bun run profile:tui -- --runtime node -> builds packages/coding-agent and profiles TUI startup with Node
+- bun run profile:rpc -- --runtime node -> builds packages/coding-agent and profiles RPC startup with Node
 
 Options:
   --mode <name>          tui or rpc (default: tui)
@@ -281,27 +283,12 @@ async function waitForExit(child, errorPrefix) {
 async function runBuild() {
 	process.stdout.write("Building packages/tui, packages/ai, packages/agent, and packages/coding-agent...\n");
 	const startedAt = performance.now();
-	const child = spawn(
-		"npm",
-		[
-			"run",
-			"build",
-			"--workspace",
-			"packages/tui",
-			"--workspace",
-			"packages/ai",
-			"--workspace",
-			"packages/agent",
-			"--workspace",
-			"packages/coding-agent",
-		],
-		{
-			cwd: repoRoot,
-			env: process.env,
-			stdio: ["ignore", "pipe", "pipe"],
-			shell: process.platform === "win32",
-		},
-	);
+	const child = spawn("bun", ["run", "build"], {
+		cwd: repoRoot,
+		env: process.env,
+		stdio: ["ignore", "pipe", "pipe"],
+		shell: process.platform === "win32",
+	});
 
 	let stdout = "";
 	let stderr = "";

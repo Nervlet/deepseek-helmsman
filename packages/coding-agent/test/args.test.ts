@@ -107,9 +107,25 @@ describe("parseArgs", () => {
 			expect(result.model).toBe("deepseek-v4-pro");
 		});
 
-		test("parses --api-key", () => {
+		test("rejects --api-key", () => {
 			const result = parseArgs(["--api-key", "sk-test-key"]);
-			expect(result.apiKey).toBe("sk-test-key");
+			expect(result.diagnostics).toEqual([
+				{
+					type: "error",
+					message: "--api-key has been removed. Use /login to store a DeepSeek API key.",
+				},
+			]);
+			expect(result.messages).toEqual([]);
+		});
+
+		test("rejects --api-key=value", () => {
+			const result = parseArgs(["--api-key=sk-test-key"]);
+			expect(result.diagnostics).toEqual([
+				{
+					type: "error",
+					message: "--api-key has been removed. Use /login to store a DeepSeek API key.",
+				},
+			]);
 		});
 
 		test("parses --system-prompt", () => {

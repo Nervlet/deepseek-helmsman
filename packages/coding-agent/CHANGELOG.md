@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### Breaking Changes
+
+- Removed `DEEPSEEK_API_KEY`, `--api-key`, and `models.json` API-key authentication; users must run `/login` to store credentials before using provider-backed models.
+- Removed `$ENV_VAR` and `${ENV_VAR}` interpolation from API-key and header config values; plain strings are treated as literals.
+
 ## [0.78.0] - 2026-05-29
 
 ### New Features

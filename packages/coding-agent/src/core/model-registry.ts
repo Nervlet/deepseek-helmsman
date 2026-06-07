@@ -23,21 +23,11 @@ import { type Static, Type } from "typebox";
 import { Compile } from "typebox/compile";
 import type { TLocalizedValidationError } from "typebox/error";
 import { getAgentDir } from "../config.ts";
-import { warnDeprecation } from "../utils/deprecation.ts";
 import { stripJsonComments } from "../utils/json.ts";
 import { normalizePath } from "../utils/paths.ts";
 import type { AuthStatus, AuthStorage } from "./auth-storage.ts";
 import { BUILT_IN_PROVIDER_DISPLAY_NAMES } from "./provider-display-names.ts";
-import {
-	clearConfigValueCache,
-	getConfigValueEnvVarNames,
-	isCommandConfigValue,
-	isConfigValueConfigured,
-	isLegacyEnvVarNameConfigValue,
-	resolveConfigValueOrThrow,
-	resolveConfigValueUncached,
-	resolveHeadersOrThrow,
-} from "./resolve-config-value.ts";
+import { clearConfigValueCache, resolveHeadersOrThrow } from "./resolve-config-value.ts";
 
 const DEEPSEEK_PROVIDER_ID = "deepseek";
 export type DeepSeekProviderName = typeof DEEPSEEK_PROVIDER_ID;
@@ -126,7 +116,6 @@ type ModelOverride = Static<typeof ModelOverrideSchema>;
 const ProviderConfigSchema = Type.Object({
 	name: Type.Optional(Type.String({ minLength: 1 })),
 	baseUrl: Type.Optional(Type.String({ minLength: 1 })),
-	apiKey: Type.Optional(Type.String({ minLength: 1 })),
 	api: Type.Optional(Type.String({ minLength: 1 })),
 	headers: Type.Optional(Type.Record(Type.String(), Type.String())),
 	compat: Type.Optional(ProviderCompatSchema),
@@ -163,80 +152,8 @@ interface ProviderOverride {
 }
 
 interface ProviderRequestConfig {
-	apiKey?: string;
 	headers?: Record<string, string>;
 	authHeader?: boolean;
-}
-
-function migrateLegacyRegisterProviderConfigValue(providerName: string, field: string, value: string): string {
-	if (!isLegacyEnvVarNameConfigValue(value)) return value;
-	warnDeprecation(
-		`registerProvider("${providerName}") ${field} value "${value}" is treated as a legacy environment variable reference. This will no longer be detected as an environment variable reference in a future release. Pass "$${value}" instead.`,
-	);
-	return `$${value}`;
-}
-
-function migrateLegacyRegisterProviderHeaders(
-	providerName: string,
-	field: string,
-	headers: Record<string, string> | undefined,
-): Record<string, string> | undefined {
-	if (!headers) return undefined;
-	let migratedHeaders: Record<string, string> | undefined;
-	for (const [key, value] of Object.entries(headers)) {
-		const migratedValue = migrateLegacyRegisterProviderConfigValue(providerName, `${field} header "${key}"`, value);
-		if (migratedValue === value) continue;
-		migratedHeaders ??= { ...headers };
-		migratedHeaders[key] = migratedValue;
-	}
-	return migratedHeaders ?? headers;
-}
-
-function migrateLegacyRegisterProviderConfigValues(
-	providerName: string,
-	config: ProviderConfigInput,
-): ProviderConfigInput {
-	let migratedConfig: ProviderConfigInput | undefined;
-
-	const setMigratedConfigValue = <TKey extends keyof ProviderConfigInput>(
-		key: TKey,
-		value: ProviderConfigInput[TKey],
-	) => {
-		migratedConfig ??= { ...config };
-		migratedConfig[key] = value;
-	};
-
-	if (config.apiKey) {
-		const apiKey = migrateLegacyRegisterProviderConfigValue(providerName, "apiKey", config.apiKey);
-		if (apiKey !== config.apiKey) {
-			setMigratedConfigValue("apiKey", apiKey);
-		}
-	}
-
-	const headers = migrateLegacyRegisterProviderHeaders(providerName, "headers", config.headers);
-	if (headers !== config.headers) {
-		setMigratedConfigValue("headers", headers);
-	}
-
-	if (config.models) {
-		let models: ProviderConfigInput["models"] | undefined;
-		for (let index = 0; index < config.models.length; index++) {
-			const model = config.models[index];
-			const modelHeaders = migrateLegacyRegisterProviderHeaders(
-				providerName,
-				`model "${model.id}" headers`,
-				model.headers,
-			);
-			if (modelHeaders === model.headers) continue;
-			models ??= [...config.models];
-			models[index] = { ...model, headers: modelHeaders };
-		}
-		if (models) {
-			setMigratedConfigValue("models", models);
-		}
-	}
-
-	return migratedConfig ?? config;
 }
 
 export type ResolvedRequestAuth =
@@ -253,7 +170,7 @@ export type ResolvedRequestAuth =
 /** Result of loading DeepSeek model config from models.json */
 interface CustomModelsResult {
 	models: Model<Api>[];
-	/** Providers with baseUrl/headers/apiKey overrides for built-in models */
+	/** Providers with baseUrl/header overrides for built-in models */
 	overrides: Map<string, ProviderOverride>;
 	/** Per-model overrides: provider -> modelId -> override */
 	modelOverrides: Map<string, Map<string, ModelOverride>>;
@@ -603,11 +520,7 @@ export class ModelRegistry {
 	 * Get API key for a model.
 	 */
 	hasConfiguredAuth(model: Model<Api>): boolean {
-		const providerApiKey = this.providerRequestConfigs.get(model.provider)?.apiKey;
-		return (
-			this.authStorage.hasAuth(model.provider) ||
-			(providerApiKey !== undefined && isConfigValueConfigured(providerApiKey))
-		);
+		return this.authStorage.hasAuth(model.provider);
 	}
 
 	private getModelRequestKey(provider: string, modelId: string): string {
@@ -617,17 +530,15 @@ export class ModelRegistry {
 	private storeProviderRequestConfig(
 		providerName: string,
 		config: {
-			apiKey?: string;
 			headers?: Record<string, string>;
 			authHeader?: boolean;
 		},
 	): void {
-		if (!config.apiKey && !config.headers && !config.authHeader) {
+		if (!config.headers && !config.authHeader) {
 			return;
 		}
 
 		this.providerRequestConfigs.set(providerName, {
-			apiKey: config.apiKey,
 			headers: config.headers,
 			authHeader: config.authHeader,
 		});
@@ -648,12 +559,7 @@ export class ModelRegistry {
 	async getApiKeyAndHeaders(model: Model<Api>): Promise<ResolvedRequestAuth> {
 		try {
 			const providerConfig = this.providerRequestConfigs.get(model.provider);
-			const apiKeyFromAuthStorage = await this.authStorage.getApiKey(model.provider, { includeFallback: false });
-			const apiKey =
-				apiKeyFromAuthStorage ??
-				(providerConfig?.apiKey
-					? resolveConfigValueOrThrow(providerConfig.apiKey, `API key for provider "${model.provider}"`)
-					: undefined);
+			const apiKey = await this.authStorage.getApiKey(model.provider, { includeFallback: false });
 
 			const providerHeaders = resolveHeadersOrThrow(providerConfig?.headers, `provider "${model.provider}"`);
 			const modelHeaders = resolveHeadersOrThrow(
@@ -691,28 +597,7 @@ export class ModelRegistry {
 	 * This intentionally does not execute command-backed config values.
 	 */
 	getProviderAuthStatus(provider: string): AuthStatus {
-		const authStatus = this.authStorage.getAuthStatus(provider);
-		if (authStatus.source) {
-			return authStatus;
-		}
-
-		const providerApiKey = this.providerRequestConfigs.get(provider)?.apiKey;
-		if (!providerApiKey) {
-			return authStatus;
-		}
-
-		if (isCommandConfigValue(providerApiKey)) {
-			return { configured: true, source: "models_json_command" };
-		}
-
-		const envVarNames = getConfigValueEnvVarNames(providerApiKey);
-		if (envVarNames.length > 0) {
-			return isConfigValueConfigured(providerApiKey)
-				? { configured: true, source: "environment", label: envVarNames.join(", ") }
-				: { configured: false };
-		}
-
-		return { configured: true, source: "models_json_key" };
+		return this.authStorage.getAuthStatus(provider);
 	}
 
 	/**
@@ -735,13 +620,7 @@ export class ModelRegistry {
 	 * Get API key for a provider.
 	 */
 	async getApiKeyForProvider(provider: string): Promise<string | undefined> {
-		const apiKey = await this.authStorage.getApiKey(provider, { includeFallback: false });
-		if (apiKey !== undefined) {
-			return apiKey;
-		}
-
-		const providerApiKey = this.providerRequestConfigs.get(provider)?.apiKey;
-		return providerApiKey ? resolveConfigValueUncached(providerApiKey) : undefined;
+		return this.authStorage.getApiKey(provider, { includeFallback: false });
 	}
 
 	/**
@@ -762,10 +641,9 @@ export class ModelRegistry {
 	registerProvider(providerName: DeepSeekProviderName, config: ProviderConfigInput): void {
 		assertDeepSeekProvider(providerName);
 
-		const migratedConfig = migrateLegacyRegisterProviderConfigValues(providerName, config);
-		this.validateProviderConfig(providerName, migratedConfig);
-		this.applyProviderConfig(providerName, migratedConfig);
-		this.upsertRegisteredProvider(providerName, migratedConfig);
+		this.validateProviderConfig(providerName, config);
+		this.applyProviderConfig(providerName, config);
+		this.upsertRegisteredProvider(providerName, config);
 	}
 
 	/**
@@ -815,9 +693,6 @@ export class ModelRegistry {
 
 		if (!config.baseUrl) {
 			throw new Error(`Provider ${providerName}: "baseUrl" is required when defining models.`);
-		}
-		if (!config.apiKey && !config.oauth) {
-			throw new Error(`Provider ${providerName}: "apiKey" or "oauth" is required when defining models.`);
 		}
 
 		for (const modelDef of config.models) {
@@ -905,7 +780,6 @@ export class ModelRegistry {
 export interface ProviderConfigInput {
 	name?: string;
 	baseUrl?: string;
-	apiKey?: string;
 	api?: Api;
 	streamSimple?: (model: Model<Api>, context: Context, options?: SimpleStreamOptions) => AssistantMessageEventStream;
 	headers?: Record<string, string>;

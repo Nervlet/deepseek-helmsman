@@ -37,7 +37,6 @@ describe("ModelRegistry", () => {
 	): ProviderConfigInput {
 		return {
 			baseUrl,
-			apiKey: "test-key",
 			api,
 			models: models.map((model) => ({
 				id: model.id,
@@ -166,7 +165,6 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				"not-deepseek": {
 					baseUrl: "https://example.com/v1",
-					apiKey: "CUSTOM_KEY",
 					api: "openai-completions",
 					models: [{ id: "custom-model", api: "openai-completions" }],
 				},
@@ -181,7 +179,6 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				deepseek: {
 					baseUrl: "https://example.com/v1",
-					apiKey: "DEEPSEEK_KEY",
 					api: "openai-completions",
 					compat: {
 						supportsUsageInStreaming: false,
@@ -212,7 +209,6 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				deepseek: {
 					baseUrl: "https://example.com/v1",
-					apiKey: "DEEPSEEK_KEY",
 					api: "openai-completions",
 					compat: { supportsUsageInStreaming: false },
 					models: [
@@ -249,7 +245,6 @@ describe("ModelRegistry", () => {
 			writeRawModelsJson({
 				deepseek: {
 					baseUrl: "https://provider.example.com/v1",
-					apiKey: "DEEPSEEK_KEY",
 					api: "openai-completions",
 					models: [
 						{
@@ -319,30 +314,6 @@ describe("ModelRegistry", () => {
 			}).toThrow('only supports provider "deepseek"');
 		});
 
-		test("registerProvider warns and temporarily treats uppercase apiKey as an env reference", async () => {
-			const originalEnv = process.env.CUSTOM_NAME;
-			process.env.CUSTOM_NAME = "legacy-env-key";
-			const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-
-			try {
-				const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-
-				registry.registerProvider("deepseek", {
-					...providerConfig("https://provider.test/v1", [{ id: "demo-model" }]),
-					apiKey: "CUSTOM_NAME",
-				});
-
-				expect(await registry.getApiKeyForProvider("deepseek")).toBe("legacy-env-key");
-				expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Pass "$CUSTOM_NAME" instead'));
-			} finally {
-				if (originalEnv === undefined) {
-					delete process.env.CUSTOM_NAME;
-				} else {
-					process.env.CUSTOM_NAME = originalEnv;
-				}
-			}
-		});
-
 		test("unregisterProvider removes custom streamSimple override and restores built-in handler", () => {
 			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
 
@@ -390,49 +361,22 @@ describe("ModelRegistry", () => {
 	});
 
 	describe("API key resolution", () => {
-		function providerWithApiKey(apiKey: string) {
-			return {
-				...providerConfig("https://example.com/v1", [{ id: "test-model" }], "openai-completions"),
-				apiKey,
-			};
-		}
-
-		test("apiKey with ! prefix executes command and uses stdout", async () => {
+		test("uses stored auth.json API key", async () => {
+			authStorage.set("deepseek", { type: "api_key", key: "stored-key" });
 			writeModelsJson({
-				deepseek: providerWithApiKey("!echo test-api-key-from-command"),
+				deepseek: providerConfig("https://example.com/v1", [{ id: "test-model" }], "openai-completions"),
 			});
 
 			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
 
-			expect(await registry.getApiKeyForProvider("deepseek")).toBe("test-api-key-from-command");
-		});
-
-		test("apiKey with $ prefix resolves to env value", async () => {
-			const originalEnv = process.env.TEST_API_KEY_12345;
-			process.env.TEST_API_KEY_12345 = "env-api-key-value";
-
-			try {
-				writeModelsJson({
-					deepseek: providerWithApiKey("$TEST_API_KEY_12345"),
-				});
-
-				const registry = ModelRegistry.create(authStorage, modelsJsonPath);
-
-				expect(await registry.getApiKeyForProvider("deepseek")).toBe("env-api-key-value");
-			} finally {
-				if (originalEnv === undefined) {
-					delete process.env.TEST_API_KEY_12345;
-				} else {
-					process.env.TEST_API_KEY_12345 = originalEnv;
-				}
-			}
+			expect(await registry.getApiKeyForProvider("deepseek")).toBe("stored-key");
 		});
 
 		test("models.json authHeader adds bearer authorization", async () => {
+			authStorage.set("deepseek", { type: "api_key", key: "deepseek-key" });
 			writeRawModelsJson({
 				deepseek: {
 					baseUrl: "https://example.com/v1",
-					apiKey: "deepseek-key",
 					authHeader: true,
 					api: "openai-completions",
 					models: [

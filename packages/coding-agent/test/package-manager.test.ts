@@ -744,7 +744,7 @@ Content`,
 
 			await packageManager.install(source);
 
-			expect(runCommandSpy).toHaveBeenCalledWith("npm", ["install", "--omit=dev"], { cwd: targetDir });
+			expect(runCommandSpy).toHaveBeenCalledWith("bun", ["install", "--omit=dev"], { cwd: targetDir });
 		});
 
 		it("should reconcile an existing git checkout to a pinned ref during install", async () => {
@@ -772,7 +772,7 @@ Content`,
 				cwd: targetDir,
 			});
 			expect(runCommandSpy).toHaveBeenCalledWith("git", ["clean", "-fdx"], { cwd: targetDir });
-			expect(runCommandSpy).toHaveBeenCalledWith("npm", ["install", "--omit=dev"], { cwd: targetDir });
+			expect(runCommandSpy).toHaveBeenCalledWith("bun", ["install", "--omit=dev"], { cwd: targetDir });
 		});
 
 		it("should reconcile an existing git checkout to its update target when installing without a ref", async () => {
@@ -858,7 +858,7 @@ Content`,
 
 			await packageManager.update(source);
 
-			expect(runCommandSpy).toHaveBeenCalledWith("npm", ["install", "--omit=dev"], { cwd: targetDir });
+			expect(runCommandSpy).toHaveBeenCalledWith("bun", ["install", "--omit=dev"], { cwd: targetDir });
 		});
 
 		it("should use plain install through npmCommand argv when updating git package dependencies", async () => {
@@ -2011,13 +2011,13 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 			await packageManager.update("npm:example");
 
 			expect(runCommandCaptureSpy).toHaveBeenCalledWith(
-				"npm",
-				["view", "example", "version", "--json"],
+				"bun",
+				["info", "example", "version", "--json"],
 				expect.objectContaining({ cwd: tempDir, timeoutMs: expect.any(Number) }),
 			);
 			expect(runCommandSpy).toHaveBeenCalledWith(
-				"npm",
-				["install", "example@latest", "--prefix", join(tempDir, ".deepseek-helmsman", "npm"), "--legacy-peer-deps"],
+				"bun",
+				["install", "example@latest", "--cwd", join(tempDir, ".deepseek-helmsman", "npm"), "--omit=peer"],
 				undefined,
 			);
 		});
@@ -2034,8 +2034,8 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 			await packageManager.update("npm:example");
 
 			expect(runCommandCaptureSpy).toHaveBeenCalledWith(
-				"npm",
-				["view", "example", "version", "--json"],
+				"bun",
+				["info", "example", "version", "--json"],
 				expect.objectContaining({ cwd: tempDir, timeoutMs: expect.any(Number) }),
 			);
 			expect(runCommandSpy).not.toHaveBeenCalled();
@@ -2055,14 +2055,8 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 				.spyOn(packageManager as any, "runCommand")
 				.mockImplementation(async (...callArgs: unknown[]) => {
 					const [command, args] = callArgs as [string, string[]];
-					expect(command).toBe("npm");
-					expect(args).toEqual([
-						"install",
-						"legacy-pkg@latest",
-						"--prefix",
-						join(agentDir, "npm"),
-						"--legacy-peer-deps",
-					]);
+					expect(command).toBe("bun");
+					expect(args).toEqual(["install", "legacy-pkg@latest", "--cwd", join(agentDir, "npm"), "--omit=peer"]);
 					mkdirSync(managedPath, { recursive: true });
 					writeFileSync(
 						join(managedPath, "package.json"),
@@ -2124,7 +2118,7 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 				.spyOn(packageManager as any, "runCommandCapture")
 				.mockImplementation(async (...callArgs: unknown[]) => {
 					const [_command, args] = callArgs as [string, string[]];
-					if (args[0] !== "view") {
+					if (args[0] !== "info") {
 						throw new Error(`Unexpected runCommandCapture args: ${args.join(" ")}`);
 					}
 					switch (args[1]) {
@@ -2147,7 +2141,7 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 				.spyOn(packageManager as any, "runCommand")
 				.mockImplementation(async (...callArgs: unknown[]) => {
 					const [command, args] = callArgs as [string, string[]];
-					if (command !== "npm") {
+					if (command !== "bun") {
 						throw new Error(`Unexpected runCommand call: ${command} ${args.join(" ")}`);
 					}
 					activeNpmUpdates += 1;
@@ -2171,27 +2165,20 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 			expect(runCommandSpy).toHaveBeenCalledTimes(2);
 			expect(runCommandSpy).toHaveBeenNthCalledWith(
 				1,
-				"npm",
-				[
-					"install",
-					"user-old@latest",
-					"user-unknown@latest",
-					"--prefix",
-					join(agentDir, "npm"),
-					"--legacy-peer-deps",
-				],
+				"bun",
+				["install", "user-old@latest", "user-unknown@latest", "--cwd", join(agentDir, "npm"), "--omit=peer"],
 				undefined,
 			);
 			expect(runCommandSpy).toHaveBeenNthCalledWith(
 				2,
-				"npm",
+				"bun",
 				[
 					"install",
 					"project-old@latest",
 					"project-missing@latest",
-					"--prefix",
+					"--cwd",
 					join(tempDir, ".deepseek-helmsman", "npm"),
-					"--legacy-peer-deps",
+					"--omit=peer",
 				],
 				undefined,
 			);
@@ -2244,7 +2231,7 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 			expect(refreshTemporaryGitSourceSpy).not.toHaveBeenCalled();
 		});
 
-		it("should not run npm view during resolve for installed unpinned packages", async () => {
+		it("should not run package version lookup during resolve for installed unpinned packages", async () => {
 			const installedPath = join(tempDir, ".deepseek-helmsman", "npm", "node_modules", "example");
 			mkdirSync(join(installedPath, "extensions"), { recursive: true });
 			writeFileSync(join(installedPath, "package.json"), JSON.stringify({ name: "example", version: "1.0.0" }));
@@ -2319,15 +2306,15 @@ export default function(api) { api.registerTool({ name: "test", description: "te
 			expect(gitUpdateSpy).not.toHaveBeenCalled();
 		});
 
-		it("should use npm view to fetch latest version", async () => {
+		it("should use bun info to fetch latest version by default", async () => {
 			const runCommandCaptureSpy = vi.spyOn(packageManager as any, "runCommandCapture").mockResolvedValue('"1.2.3"');
 
 			const latest = await (packageManager as any).getLatestNpmVersion("example");
 			expect(latest).toBe("1.2.3");
 			expect(runCommandCaptureSpy).toHaveBeenCalledTimes(1);
 			expect(runCommandCaptureSpy).toHaveBeenCalledWith(
-				"npm",
-				["view", "example", "version", "--json"],
+				"bun",
+				["info", "example", "version", "--json"],
 				expect.objectContaining({ cwd: tempDir, timeoutMs: expect.any(Number) }),
 			);
 		});

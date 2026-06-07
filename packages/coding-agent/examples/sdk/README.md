@@ -26,7 +26,7 @@ The runtime example shows how to build a recreate function that closes over proc
 
 ```bash
 cd packages/coding-agent
-npx tsx examples/sdk/01-minimal.ts
+bun examples/sdk/01-minimal.ts
 ```
 
 ## Quick Reference
@@ -72,7 +72,7 @@ const { session } = await createAgentSession({
 
 // Full control
 const customAuth = AuthStorage.create("/my/app/auth.json");
-customAuth.setRuntimeApiKey("deepseek", process.env.MY_KEY!);
+customAuth.set("deepseek", { type: "api_key", key: "sk-my-key" });
 const customRegistry = ModelRegistry.create(customAuth);
 
 const resourceLoader = new DefaultResourceLoader({

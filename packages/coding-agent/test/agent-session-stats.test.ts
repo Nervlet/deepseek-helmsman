@@ -52,7 +52,7 @@ function createSession() {
 	const settingsManager = SettingsManager.inMemory();
 	const sessionManager = SessionManager.inMemory();
 	const authStorage = AuthStorage.inMemory();
-	authStorage.setRuntimeApiKey("deepseek", "test-key");
+	authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 	const session = new AgentSession({
 		agent: new Agent({
 			getApiKey: () => "test-key",

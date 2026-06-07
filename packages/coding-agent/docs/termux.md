@@ -9,22 +9,7 @@ DeepSeek Helmsman runs on Android via [Termux](https://termux.dev/), a terminal 
 
 ## Installation
 
-```bash
-# Update packages
-pkg update && pkg upgrade
-
-# Install dependencies
-pkg install nodejs termux-api git
-
-# Install DeepSeek Helmsman
-npm install -g --ignore-scripts @deepseek-helmsman/coding-agent
-
-# Create config directory
-mkdir -p ~/.deepseek-helmsman/agent
-
-# Run DeepSeek Helmsman
-deepseek-helmsman
-```
+Termux is not part of the normal Homebrew/GitHub Release binary targets. Build from source in Termux if you need Android support, and expect platform-specific native features to be limited.
 
 ## Clipboard Support
 
@@ -119,9 +104,4 @@ Run once to grant storage permissions:
 termux-setup-storage
 ```
 
-### Node.js installation issues
-
-If npm fails, try clearing the cache:
-```bash
-npm cache clean --force
-```
+Android release binaries are not currently produced.

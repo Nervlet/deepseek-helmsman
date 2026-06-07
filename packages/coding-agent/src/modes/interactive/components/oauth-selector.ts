@@ -158,20 +158,7 @@ export class OAuthSelectorComponent extends Container implements Focusable {
 		if (provider.authType !== "api_key") return theme.fg("muted", " • unconfigured");
 
 		const status = this.getAuthStatus(provider.id);
-		switch (status.source) {
-			case "environment":
-				return theme.fg("success", ` ✓ env: ${status.label ?? "API key"}`);
-			case "runtime":
-				return theme.fg("success", " ✓ runtime API key");
-			case "fallback":
-				return theme.fg("success", " ✓ custom API key");
-			case "models_json_key":
-				return theme.fg("success", " ✓ key in models.json");
-			case "models_json_command":
-				return theme.fg("success", " ✓ command in models.json");
-			default:
-				return theme.fg("muted", " • unconfigured");
-		}
+		return status.configured ? theme.fg("success", " ✓ configured") : theme.fg("muted", " • unconfigured");
 	}
 
 	handleInput(keyData: string): void {

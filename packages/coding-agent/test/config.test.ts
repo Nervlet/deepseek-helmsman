@@ -146,6 +146,18 @@ function createFakeBunScript(bunBin: string): string {
 }
 
 describe("detectInstallMethod", () => {
+	test("self-updates Homebrew binary installs", () => {
+		setExecPath("/opt/homebrew/Cellar/deepseek-helmsman/0.78.0/libexec/deepseek-helmsman");
+
+		expect(detectInstallMethod()).toBe("homebrew");
+		expect(getUpdateInstruction("@deepseek-helmsman/coding-agent")).toBe("Run: brew upgrade deepseek-helmsman");
+		expect(getSelfUpdateCommand("@deepseek-helmsman/coding-agent")).toEqual({
+			command: "brew",
+			args: ["upgrade", "deepseek-helmsman"],
+			display: "brew upgrade deepseek-helmsman",
+		});
+	});
+
 	test("detects pnpm from Windows .pnpm install paths", () => {
 		setExecPath(
 			"C:\\Users\\Admin\\Documents\\pnpm-repository\\global\\5\\.pnpm\\@deepseek-helmsman+coding-agent@0.67.68\\node_modules\\@deepseek-helmsman\\coding-agent\\dist\\cli.js",

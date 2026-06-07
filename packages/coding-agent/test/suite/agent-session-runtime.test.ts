@@ -54,7 +54,7 @@ describe("AgentSessionRuntime characterization", () => {
 		faux.setResponses([fauxAssistantMessage("one"), fauxAssistantMessage("two"), fauxAssistantMessage("three")]);
 
 		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		authStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 
 		const runtimeOptions = {
 			agentDir: tempDir,
@@ -66,7 +66,6 @@ describe("AgentSessionRuntime characterization", () => {
 					(extensionApi: ExtensionAPI) => {
 						extensionApi.registerProvider("deepseek", {
 							baseUrl: faux.getModel().baseUrl,
-							apiKey: "faux-key",
 							api: faux.api,
 							models: faux.models.map((registeredModel) => ({
 								id: registeredModel.id,
@@ -352,7 +351,7 @@ describe("AgentSessionRuntime characterization", () => {
 		faux.setResponses([fauxAssistantMessage("one"), fauxAssistantMessage("two"), fauxAssistantMessage("three")]);
 
 		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		authStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 
 		const runtimeOptions = {
 			agentDir: tempDir,
@@ -363,7 +362,6 @@ describe("AgentSessionRuntime characterization", () => {
 					(extensionApi: ExtensionAPI) => {
 						extensionApi.registerProvider("deepseek", {
 							baseUrl: faux.getModel().baseUrl,
-							apiKey: "faux-key",
 							api: faux.api,
 							models: faux.models.map((registeredModel) => ({
 								id: registeredModel.id,
@@ -469,7 +467,7 @@ describe("AgentSessionRuntime characterization", () => {
 		mkdirSync(secondDir, { recursive: true });
 		const { runtime, faux, tempDir } = await createRuntimeForTest(() => {}, { cwd: firstDir });
 		const otherAuthStorage = AuthStorage.inMemory();
-		otherAuthStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		otherAuthStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 		const otherRuntimeOptions = {
 			agentDir: tempDir,
 			authStorage: otherAuthStorage,
@@ -478,7 +476,6 @@ describe("AgentSessionRuntime characterization", () => {
 					(extensionApi: ExtensionAPI) => {
 						extensionApi.registerProvider("deepseek", {
 							baseUrl: faux.getModel().baseUrl,
-							apiKey: "faux-key",
 							api: faux.api,
 							models: faux.models.map((registeredModel) => ({
 								id: registeredModel.id,
@@ -542,7 +539,7 @@ describe("AgentSessionRuntime characterization", () => {
 		const otherDir = join(tempDir, "other");
 		mkdirSync(otherDir, { recursive: true });
 		const otherAuthStorage = AuthStorage.inMemory();
-		otherAuthStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		otherAuthStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 		const otherRuntimeOptions = {
 			agentDir: tempDir,
 			authStorage: otherAuthStorage,
@@ -551,7 +548,6 @@ describe("AgentSessionRuntime characterization", () => {
 					(extensionApi: ExtensionAPI) => {
 						extensionApi.registerProvider("deepseek", {
 							baseUrl: faux.getModel().baseUrl,
-							apiKey: "faux-key",
 							api: faux.api,
 							models: faux.models.map((registeredModel) => ({
 								id: registeredModel.id,

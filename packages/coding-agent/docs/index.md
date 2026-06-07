@@ -4,21 +4,19 @@ DeepSeek Helmsman is a terminal coding agent focused on DeepSeek models. It keep
 
 ## Quick start
 
-Install DeepSeek Helmsman with npm:
+Install DeepSeek Helmsman with Homebrew:
 
 ```bash
-npm install -g --ignore-scripts @deepseek-helmsman/coding-agent
+brew install Nervlet/deepseek-helmsman/deepseek-helmsman
 ```
 
-`--ignore-scripts` disables dependency lifecycle scripts during install. DeepSeek Helmsman does not require install scripts for normal npm installs.
+You can also download a platform archive from GitHub Releases and put the extracted executable on your `PATH`.
 
-To uninstall the CLI, use the package manager that installed it:
+To uninstall the CLI:
 
 ```bash
-npm uninstall -g @deepseek-helmsman/coding-agent
+brew uninstall deepseek-helmsman
 ```
-
-For pnpm, Yarn, or Bun installs, use the matching global remove command: `pnpm remove -g @deepseek-helmsman/coding-agent`, `yarn global remove @deepseek-helmsman/coding-agent`, or `bun uninstall -g @deepseek-helmsman/coding-agent`.
 
 Then run it in a project directory:
 
@@ -26,7 +24,7 @@ Then run it in a project directory:
 deepseek-helmsman
 ```
 
-Set `DEEPSEEK_API_KEY` before starting the agent, or use `/login` to store the key in `~/.deepseek-helmsman/agent/auth.json`.
+Run `/login` to store your DeepSeek API key in `~/.deepseek-helmsman/agent/auth.json`.
 
 For the full first-run flow, see [Quickstart](quickstart.md).
 
@@ -52,7 +50,7 @@ For the full first-run flow, see [Quickstart](quickstart.md).
 
 ## Programmatic usage
 
-- [SDK](sdk.md) - embed DeepSeek Helmsman in Node.js applications.
+- [SDK](sdk.md) - embed DeepSeek Helmsman in Bun/TypeScript applications.
 - [RPC mode](rpc.md) - integrate over stdin/stdout JSONL.
 - [JSON event stream mode](json.md) - print mode with structured events.
 - [TUI components](tui.md) - build custom terminal UI for extensions.

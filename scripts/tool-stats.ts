@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -26,7 +26,7 @@ function parseArgs(): { sessionsDir: string; output: string } {
 		if (arg === "--sessions-dir" && args[i + 1]) sessionsDir = resolve(args[++i]);
 		else if ((arg === "--output" || arg === "-o") && args[i + 1]) output = resolve(args[++i]);
 		else if (arg === "--help" || arg === "-h") {
-			console.log(`Usage: scripts/tool-stats.ts [--sessions-dir <dir>] [--output <file.html>]`);
+			console.log(`Usage: bun scripts/tool-stats.ts [--sessions-dir <dir>] [--output <file.html>]`);
 			process.exit(0);
 		}
 	}

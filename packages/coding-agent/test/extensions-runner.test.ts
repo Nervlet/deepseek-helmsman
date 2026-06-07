@@ -36,7 +36,6 @@ describe("ExtensionRunner", () => {
 
 	const providerModelConfig: ProviderConfig = {
 		baseUrl: "https://provider.test/v1",
-		apiKey: "provider-test-key",
 		api: "openai-completions",
 		models: [
 			{

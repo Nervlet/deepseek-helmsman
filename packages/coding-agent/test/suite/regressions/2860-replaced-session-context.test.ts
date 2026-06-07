@@ -46,7 +46,7 @@ describe("regression #2860: replaced session callbacks", () => {
 		faux.setResponses(responses.map((response) => fauxAssistantMessage(response)));
 
 		const authStorage = AuthStorage.inMemory();
-		authStorage.setRuntimeApiKey(faux.getModel().provider, "faux-key");
+		authStorage.set(faux.getModel().provider, { type: "api_key", key: "faux-key" });
 
 		const createRuntime: CreateAgentSessionRuntimeFactory = async ({ cwd, sessionManager, sessionStartEvent }) => {
 			const services = await createAgentSessionServices({
@@ -58,7 +58,6 @@ describe("regression #2860: replaced session callbacks", () => {
 						(extensionApi: ExtensionAPI) => {
 							extensionApi.registerProvider("deepseek", {
 								baseUrl: faux.getModel().baseUrl,
-								apiKey: "faux-key",
 								api: faux.api,
 								models: faux.models.map((registeredModel) => ({
 									id: registeredModel.id,

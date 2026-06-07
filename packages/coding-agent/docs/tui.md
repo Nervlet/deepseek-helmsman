@@ -448,7 +448,7 @@ interface MyTheme {
 Set `DEEPSEEK_HELMSMAN_TUI_WRITE_LOG` to capture the raw ANSI stream written to stdout.
 
 ```bash
-DEEPSEEK_HELMSMAN_TUI_WRITE_LOG=/tmp/tui-ansi.log npx tsx packages/tui/test/chat-simple.ts
+DEEPSEEK_HELMSMAN_TUI_WRITE_LOG=/tmp/tui-ansi.log bun packages/tui/test/chat-simple.ts
 ```
 
 ## Performance

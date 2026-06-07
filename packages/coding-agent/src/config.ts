@@ -26,7 +26,7 @@ export const isBunRuntime = !!process.versions.bun;
 // Install Method Detection
 // =============================================================================
 
-export type InstallMethod = "bun-binary" | "npm" | "pnpm" | "yarn" | "bun" | "unknown";
+export type InstallMethod = "homebrew" | "bun-binary" | "npm" | "pnpm" | "yarn" | "bun" | "unknown";
 
 interface SelfUpdateCommandStep {
 	command: string;
@@ -59,12 +59,14 @@ function makeSelfUpdateCommandStep(command: string, args: string[]): SelfUpdateC
 }
 
 export function detectInstallMethod(): InstallMethod {
+	const resolvedPath = `${__dirname}\0${process.execPath || ""}`.toLowerCase().replace(/\\/g, "/");
+
+	if (resolvedPath.includes("/cellar/deepseek-helmsman/")) {
+		return "homebrew";
+	}
 	if (isBunBinary) {
 		return "bun-binary";
 	}
-
-	const resolvedPath = `${__dirname}\0${process.execPath || ""}`.toLowerCase().replace(/\\/g, "/");
-
 	if (resolvedPath.includes("/pnpm/") || resolvedPath.includes("/.pnpm/")) {
 		return "pnpm";
 	}
@@ -107,6 +109,8 @@ function getSelfUpdateCommandForMethod(
 	npmCommand?: string[],
 ): SelfUpdateCommand | undefined {
 	switch (method) {
+		case "homebrew":
+			return makeSelfUpdateCommandStep("brew", ["upgrade", "deepseek-helmsman"]);
 		case "bun-binary":
 			return undefined;
 		case "pnpm":
@@ -219,6 +223,7 @@ function getGlobalPackageRoots(method: InstallMethod, _packageName: string, npmC
 			}
 			return roots;
 		}
+		case "homebrew":
 		case "bun-binary":
 		case "unknown":
 			return [];
@@ -296,6 +301,9 @@ export function getSelfUpdateCommand(
 ): SelfUpdateCommand | undefined {
 	const method = detectInstallMethod();
 	const command = getSelfUpdateCommandForMethod(method, packageName, updatePackageName, npmCommand);
+	if (method === "homebrew") {
+		return command;
+	}
 	if (!command || !isManagedByGlobalPackageManager(method, packageName, npmCommand) || !isSelfUpdatePathWritable()) {
 		return undefined;
 	}
@@ -309,7 +317,7 @@ export function getSelfUpdateUnavailableInstruction(
 ): string {
 	const method = detectInstallMethod();
 	if (method === "bun-binary") {
-		return `Download from: https://github.com/hanbing/deepseek-helmsman/releases/latest`;
+		return `Download from: https://github.com/Nervlet/deepseek-helmsman/releases/latest`;
 	}
 	const command = getSelfUpdateCommandForMethod(method, packageName, updatePackageName, npmCommand);
 	if (command) {
@@ -337,8 +345,8 @@ export function getUpdateInstruction(packageName: string): string {
 /**
  * Get the base directory for resolving package assets (themes, package.json, README.md, CHANGELOG.md).
  * - For Bun binary: returns the directory containing the executable
- * - For Node.js (dist/): returns __dirname (the dist/ directory)
- * - For tsx (src/): returns parent directory (the package root)
+ * - For package dist: returns __dirname (the dist/ directory)
+ * - For source runs: returns parent directory (the package root)
  */
 export function getPackageDir(): string {
 	// Allow override via environment variable (useful for Nix/Guix where store paths tokenize poorly)
@@ -351,7 +359,7 @@ export function getPackageDir(): string {
 		// Bun binary: process.execPath points to the compiled executable
 		return dirname(process.execPath);
 	}
-	// Node.js: walk up from __dirname until we find package.json
+	// Package/source run: walk up from __dirname until we find package.json.
 	let dir = __dirname;
 	while (dir !== dirname(dir)) {
 		if (existsSync(join(dir, "package.json"))) {
@@ -366,8 +374,8 @@ export function getPackageDir(): string {
 /**
  * Get path to built-in themes directory (shipped with package)
  * - For Bun binary: theme/ next to executable
- * - For Node.js (dist/): dist/modes/interactive/theme/
- * - For tsx (src/): src/modes/interactive/theme/
+ * - For package dist: dist/modes/interactive/theme/
+ * - For source runs: src/modes/interactive/theme/
  */
 export function getThemesDir(): string {
 	if (isBunBinary) {
@@ -382,8 +390,8 @@ export function getThemesDir(): string {
 /**
  * Get path to HTML export template directory (shipped with package)
  * - For Bun binary: export-html/ next to executable
- * - For Node.js (dist/): dist/core/export-html/
- * - For tsx (src/): src/core/export-html/
+ * - For package dist: dist/core/export-html/
+ * - For source runs: src/core/export-html/
  */
 export function getExportTemplateDir(): string {
 	if (isBunBinary) {
@@ -422,8 +430,8 @@ export function getChangelogPath(): string {
 /**
  * Get path to built-in interactive assets directory.
  * - For Bun binary: assets/ next to executable
- * - For Node.js (dist/): dist/modes/interactive/assets/
- * - For tsx (src/): src/modes/interactive/assets/
+ * - For package dist: dist/modes/interactive/assets/
+ * - For source runs: src/modes/interactive/assets/
  */
 export function getInteractiveAssetsDir(): string {
 	if (isBunBinary) {

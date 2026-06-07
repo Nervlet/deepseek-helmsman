@@ -47,7 +47,7 @@ describe("version checks", () => {
 
 		await expect(getLatestDeepSeekHelmsmanVersion("1.2.3")).resolves.toBe("1.2.4");
 		expect(fetchMock).toHaveBeenCalledWith(
-			"https://api.github.com/repos/hanbing/deepseek-helmsman/releases/latest",
+			"https://api.github.com/repos/Nervlet/deepseek-helmsman/releases/latest",
 			expect.objectContaining({
 				headers: expect.objectContaining({
 					"User-Agent": expect.stringMatching(/^deepseek-helmsman\/1\.2\.3 /),

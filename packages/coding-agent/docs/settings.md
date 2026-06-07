@@ -135,15 +135,15 @@ Keep `retry.provider.maxRetries` at `0` unless provider-level retries are explic
 |---------|------|---------|-------------|
 | `shellPath` | string | - | Custom shell path (e.g., for Cygwin on Windows) |
 | `shellCommandPrefix` | string | - | Prefix for every bash command (e.g., `"shopt -s expand_aliases"`) |
-| `npmCommand` | string[] | - | Command argv used for npm package lookup/install operations (e.g., `["mise", "exec", "node@20", "--", "npm"]`) |
+| `npmCommand` | string[] | - | Command argv used for npm package source lookup/install operations (e.g., `["mise", "exec", "bun@1", "--", "bun"]`) |
 
 ```json
 {
-  "npmCommand": ["mise", "exec", "node@20", "--", "npm"]
+  "npmCommand": ["mise", "exec", "bun@1", "--", "bun"]
 }
 ```
 
-`npmCommand` is used for all npm package-manager operations, including installs, uninstalls, and dependency installs inside git packages. User-scoped npm packages install under `~/.deepseek-helmsman/agent/npm/`; project-scoped npm packages install under `.deepseek-helmsman/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid npm-specific flags in wrappers or alternate package managers.
+`npmCommand` is used for all npm package-source operations, including installs, uninstalls, and dependency installs inside git packages. When unset, Bun is used by default when available, with npm fallback. User-scoped npm packages install under `~/.deepseek-helmsman/agent/npm/`; project-scoped npm packages install under `.deepseek-helmsman/npm/`. Use argv-style entries exactly as the process should be launched. When `npmCommand` is configured, git package dependency installs use plain `install` to avoid package-manager-specific flags in wrappers or alternate package managers.
 
 ### Sessions
 

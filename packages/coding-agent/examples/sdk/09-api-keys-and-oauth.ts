@@ -31,15 +31,15 @@ const { session: customAuthSession } = await createAgentSession({
 console.log("Session with custom auth storage location");
 customAuthSession.dispose();
 
-// Runtime API key override (not persisted to disk)
-authStorage.setRuntimeApiKey("deepseek", "sk-my-temp-key");
-const { session: runtimeKeySession } = await createAgentSession({
+// Persisted API key, equivalent to /login
+authStorage.set("deepseek", { type: "api_key", key: "sk-my-key" });
+const { session: storedKeySession } = await createAgentSession({
 	sessionManager: SessionManager.inMemory(),
 	authStorage,
 	modelRegistry,
 });
-console.log("Session with runtime API key override");
-runtimeKeySession.dispose();
+console.log("Session with stored API key");
+storedKeySession.dispose();
 
 // No models.json - only built-in models
 const simpleRegistry = ModelRegistry.inMemory(authStorage);

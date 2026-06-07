@@ -1,7 +1,9 @@
 import assert from "node:assert";
-import { describe, it, mock } from "node:test";
+import { describe, it } from "node:test";
 import { setKittyProtocolActive } from "../src/keys.ts";
 import { normalizeAppleTerminalInput, ProcessTerminal } from "../src/terminal.ts";
+
+const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 describe("normalizeAppleTerminalInput", () => {
 	it("rewrites Apple Terminal Return to CSI-u Shift+Enter when Shift is pressed", () => {
@@ -82,12 +84,11 @@ describe("ProcessTerminal Kitty keyboard protocol negotiation", () => {
 		};
 	}
 
-	it("activates Kitty mode for non-zero negotiated flags", () => {
-		mock.timers.enable({ apis: ["setTimeout"] });
+	it("activates Kitty mode for non-zero negotiated flags", async () => {
 		const harness = setupNegotiation();
 		try {
 			harness.send("\x1b[?1u");
-			mock.timers.tick(150);
+			await wait(160);
 
 			assert.equal(harness.writes[0], "\x1b[>7u\x1b[?u\x1b[c");
 			assert.equal(harness.writes.includes("\x1b[>4;2m"), false);
@@ -98,11 +99,10 @@ describe("ProcessTerminal Kitty keyboard protocol negotiation", () => {
 			assert.equal(harness.writes.filter((write) => write === "\x1b[<u").length, 1);
 		} finally {
 			harness.cleanup();
-			mock.timers.reset();
 		}
 	});
 
-	it("falls back to modifyOtherKeys for unsupported or silent terminals", () => {
+	it("falls back to modifyOtherKeys for unsupported or silent terminals", async () => {
 		const unsupported = setupNegotiation();
 		try {
 			unsupported.send("\x1b[?62;4;52c");
@@ -115,27 +115,24 @@ describe("ProcessTerminal Kitty keyboard protocol negotiation", () => {
 			unsupported.cleanup();
 		}
 
-		mock.timers.enable({ apis: ["setTimeout"] });
 		const silent = setupNegotiation();
 		try {
-			mock.timers.tick(150);
+			await wait(160);
 
 			assert.equal(silent.writes[0], "\x1b[>7u\x1b[?u\x1b[c");
 			assert.equal(silent.writes.includes("\x1b[>4;2m"), true);
 			assert.equal(silent.terminal.kittyProtocolActive, false);
 		} finally {
 			silent.cleanup();
-			mock.timers.reset();
 		}
 	});
 
-	it("tracks late split Kitty confirmation after fallback", () => {
-		mock.timers.enable({ apis: ["setTimeout"] });
+	it("tracks late split Kitty confirmation after fallback", async () => {
 		const harness = setupNegotiation();
 		try {
-			mock.timers.tick(150);
+			await wait(160);
 			harness.send("\x1b[?7");
-			mock.timers.tick(10);
+			await wait(10);
 
 			assert.equal(harness.getInput(), undefined);
 
@@ -149,26 +146,23 @@ describe("ProcessTerminal Kitty keyboard protocol negotiation", () => {
 			assert.equal(harness.writes.filter((write) => write === "\x1b[>4;0m").length, 1);
 		} finally {
 			harness.cleanup();
-			mock.timers.reset();
 		}
 	});
 
-	it("replays buffered CSI-prefix input after fallback", () => {
-		mock.timers.enable({ apis: ["setTimeout"] });
+	it("replays buffered CSI-prefix input after fallback", async () => {
 		const harness = setupNegotiation();
 		try {
 			harness.send("\x1b[");
-			mock.timers.tick(150);
+			await wait(160);
 
 			assert.equal(harness.writes.includes("\x1b[>4;2m"), true);
 			assert.equal(harness.getInput(), undefined);
 
-			mock.timers.tick(150);
+			await wait(160);
 
 			assert.equal(harness.getInput(), "\x1b[");
 		} finally {
 			harness.cleanup();
-			mock.timers.reset();
 		}
 	});
 });

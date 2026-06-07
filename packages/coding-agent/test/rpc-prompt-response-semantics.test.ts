@@ -131,7 +131,7 @@ function createRuntimeHost(options: { withAuth: boolean; responseDelayMs: number
 	const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 	const modelRegistry = ModelRegistry.create(authStorage, tempDir);
 	if (options.withAuth) {
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 	}
 
 	const session = new AgentSession({

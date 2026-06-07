@@ -109,13 +109,12 @@ export async function createHarness(options: HarnessOptions = {}): Promise<Harne
 
 	const authStorage = AuthStorage.inMemory();
 	if (withConfiguredAuth) {
-		authStorage.setRuntimeApiKey(model.provider, "faux-key");
+		authStorage.set(model.provider, { type: "api_key", key: "faux-key" });
 	}
 	const modelRegistry = ModelRegistry.inMemory(authStorage);
 	if (withConfiguredAuth) {
 		modelRegistry.registerProvider("deepseek", {
 			baseUrl: model.baseUrl,
-			apiKey: "faux-key",
 			api: fauxProvider.api,
 			models: fauxProvider.models.map((registeredModel) => ({
 				id: registeredModel.id,

@@ -25,6 +25,10 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
       SOURCE_REF: ${{ github.event.inputs.source_ref || github.event.inputs.tag || github.ref_name }}
+      HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY || format('{0}/homebrew-deepseek-helmsman', github.repository_owner) }}
+      HOMEBREW_TAP_NAME: ${{ vars.HOMEBREW_TAP_NAME || format('{0}/deepseek-helmsman', github.repository_owner) }}
+      HOMEBREW_TAP_BRANCH: ${{ vars.HOMEBREW_TAP_BRANCH || 'main' }}
+      HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
     steps:
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -37,11 +41,21 @@ jobs:
         with:
           bun-version: 1.3.10
 
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
+      - name: Verify Homebrew tap access
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ -z "${HOMEBREW_TAP_TOKEN}" ]; then
+            echo "HOMEBREW_TAP_TOKEN is required to update ${HOMEBREW_TAP_REPOSITORY}."
+            exit 1
+          fi
+          gh repo view "${HOMEBREW_TAP_REPOSITORY}" --json nameWithOwner >/dev/null
+          tap_remote="https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/${HOMEBREW_TAP_REPOSITORY}.git"
+          tap_dir="$(mktemp -d)"
+          trap 'rm -rf "${tap_dir}"' EXIT
+          git clone --depth 1 --branch "${HOMEBREW_TAP_BRANCH}" "${tap_remote}" "${tap_dir}"
+          git -C "${tap_dir}" push --dry-run origin HEAD:refs/heads/deepseek-helmsman-token-check
 
       - name: Build binaries
         run: ./scripts/build-binaries.sh
@@ -87,55 +101,47 @@ jobs:
             deepseek-helmsman-windows-arm64.zip \
             --clobber
 
-  publish-npm:
-    runs-on: ubuntu-latest
+      - name: Update Homebrew tap
+        run: |
+          VERSION="${RELEASE_TAG#v}"
+          bun scripts/update-homebrew-tap.mjs \
+            --archive-dir packages/coding-agent/binaries \
+            --repository "${GITHUB_REPOSITORY}" \
+            --version "${VERSION}" \
+            --tag "${RELEASE_TAG}" \
+            --tap-repository "${HOMEBREW_TAP_REPOSITORY}" \
+            --tap-branch "${HOMEBREW_TAP_BRANCH}"
+
+  homebrew-smoke:
+    runs-on: macos-latest
     needs: build
-    environment: npm-publish
     permissions:
       contents: read
-      id-token: write
     env:
       RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
-      SOURCE_REF: ${{ github.event.inputs.source_ref || github.event.inputs.tag || github.ref_name }}
+      HOMEBREW_TAP_REPOSITORY: ${{ vars.HOMEBREW_TAP_REPOSITORY || format('{0}/homebrew-deepseek-helmsman', github.repository_owner) }}
+      HOMEBREW_TAP_NAME: ${{ vars.HOMEBREW_TAP_NAME || format('{0}/deepseek-helmsman', github.repository_owner) }}
+      HOMEBREW_TAP_BRANCH: ${{ vars.HOMEBREW_TAP_BRANCH || 'main' }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ env.SOURCE_REF }}
-          persist-credentials: false
-
-      - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-          cache: npm
-
-      - name: Install system dependencies
+      - name: Install release from Homebrew tap
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libcairo2-dev libpango1.0-dev libjpeg-dev libgif-dev librsvg2-dev fd-find ripgrep
-          sudo ln -s $(which fdfind) /usr/local/bin/fd
+          set -euo pipefail
+          expected_version="${RELEASE_TAG#v}"
 
-      - name: Install dependencies
-        run: npm ci --ignore-scripts
+          brew update
+          brew uninstall --force deepseek-helmsman || true
+          brew untap "${HOMEBREW_TAP_NAME}" || true
+          brew tap "${HOMEBREW_TAP_NAME}" "https://github.com/${HOMEBREW_TAP_REPOSITORY}.git"
+          tap_dir="$(brew --repo "${HOMEBREW_TAP_NAME}")"
+          git -C "${tap_dir}" fetch origin "${HOMEBREW_TAP_BRANCH}"
+          git -C "${tap_dir}" checkout "${HOMEBREW_TAP_BRANCH}"
+          brew cleanup -s deepseek-helmsman || true
 
-      - name: Build
-        run: npm run build
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install "${HOMEBREW_TAP_NAME}/deepseek-helmsman"
 
-      - name: Check
-        run: npm run check
-
-      - name: Test
-        run: npm test
-
-      - name: Verify release artifacts are committed
-        run: git diff --exit-code
-
-      - name: Upgrade npm for trusted publishing
-        run: |
-          npm install -g npm@11.16.0 --ignore-scripts
-          npm --version
-
-      - name: Publish npm packages
-        run: node scripts/publish.mjs
+          brew test "${HOMEBREW_TAP_NAME}/deepseek-helmsman"
+          test "$(brew list --versions deepseek-helmsman | awk '{print $2}')" = "${expected_version}"
+          actual_version="$(deepseek-helmsman --version)"
+          test "${actual_version}" = "${expected_version}"
+          deepseek-helmsman --help
+          deepseek-helmsman --list-models

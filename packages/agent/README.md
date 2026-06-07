@@ -2,11 +2,7 @@
 
 Stateful agent with tool execution and event streaming. Built on `@deepseek-helmsman/ai`.
 
-## Installation
-
-```bash
-npm install @deepseek-helmsman/agent-core
-```
+This package is an internal workspace package for DeepSeek Helmsman. The project is distributed as an application binary.
 
 ## Quick Start
 

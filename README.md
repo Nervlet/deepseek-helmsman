@@ -2,7 +2,15 @@
 
 DeepSeek Helmsman is a DeepSeek-only terminal coding agent. It keeps the interactive coding workflow and narrows the built-in model/provider surface to DeepSeek.
 
-## Packages
+## Install
+
+```bash
+brew install Nervlet/deepseek-helmsman/deepseek-helmsman
+```
+
+GitHub Releases also provide platform archives for manual installation.
+
+## Workspace Packages
 
 | Package | Purpose |
 | --- | --- |
@@ -14,16 +22,17 @@ DeepSeek Helmsman is a DeepSeek-only terminal coding agent. It keeps the interac
 ## Development
 
 ```bash
-npm install --ignore-scripts
+bun install --ignore-scripts
 ./deepseek-helmsman-test.sh
 ```
 
 The CLI binary name is `deepseek-helmsman`. Configure DeepSeek access with:
 
 ```bash
-export DEEPSEEK_API_KEY=...
 deepseek-helmsman
 ```
+
+Then run `/login` and enter your DeepSeek API key. Credentials are stored in `~/.deepseek-helmsman/agent/auth.json`.
 
 Local configuration is stored under `~/.deepseek-helmsman/agent` by default.
 
@@ -32,5 +41,5 @@ Local configuration is stored under `~/.deepseek-helmsman/agent` by default.
 After code changes, run:
 
 ```bash
-npm run check
+bun run check
 ```

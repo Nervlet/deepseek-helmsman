@@ -14,7 +14,6 @@ import type { ExtensionAPI } from "@deepseek-helmsman/coding-agent";
 export default function (helmsman: ExtensionAPI) {
   helmsman.registerProvider("deepseek", {
     baseUrl: "https://proxy.example.com/v1",
-    apiKey: "$DEEPSEEK_API_KEY",
     api: "openai-completions"
   });
 }
@@ -31,7 +30,6 @@ export default function (helmsman: ExtensionAPI) {
   helmsman.registerProvider("deepseek", {
     name: "DeepSeek Proxy",
     baseUrl: "https://private.example.com/v1",
-    apiKey: "$DEEPSEEK_API_KEY",
     api: "openai-completions",
     models: [
       {
@@ -52,10 +50,9 @@ Trying to register any provider id other than `deepseek` fails.
 
 ## Value Resolution
 
-`apiKey` and custom headers use the same syntax as `models.json`:
+API keys are loaded from `/login` credentials. Custom headers use the same syntax as `models.json`:
 
 - `"!command"` executes a shell command and uses stdout.
-- `"$ENV_VAR"` and `"${ENV_VAR}"` read environment variables.
 - `"$$"` emits a literal `$`.
 - `"$!"` emits a literal `!`.
 

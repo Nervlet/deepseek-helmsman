@@ -1259,7 +1259,6 @@ export interface ExtensionAPI {
 	 * // Override DeepSeek with private DeepSeek-compatible models
 	 * api.registerProvider("deepseek", {
 	 *   baseUrl: "https://proxy.example.com",
-	 *   apiKey: "$DEEPSEEK_API_KEY",
 	 *   api: "openai-completions",
 	 *   models: [
 	 *     {
@@ -1324,8 +1323,6 @@ export interface ProviderConfig {
 	name?: string;
 	/** Base URL for the API endpoint. Required when defining models. */
 	baseUrl?: string;
-	/** API key literal, env interpolation ($ENV_VAR or ${ENV_VAR}), or leading !command. Required when defining models (unless oauth provided). */
-	apiKey?: string;
 	/** API type. Required at provider or model level when defining models. */
 	api?: Api;
 	/** Optional streamSimple handler for custom APIs. */

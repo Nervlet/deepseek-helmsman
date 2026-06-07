@@ -33,7 +33,7 @@ describe("AgentSession dynamic provider registration", () => {
 		const settingsManager = SettingsManager.create(tempDir, agentDir);
 		const sessionManager = SessionManager.inMemory();
 		const authStorage = AuthStorage.create(join(agentDir, "auth.json"));
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 		const resourceLoader = new DefaultResourceLoader({
 			cwd: tempDir,
 			agentDir,

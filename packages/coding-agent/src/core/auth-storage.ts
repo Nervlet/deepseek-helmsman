@@ -6,13 +6,7 @@
  * try to refresh tokens simultaneously.
  */
 
-import {
-	findEnvKeys,
-	getEnvApiKey,
-	type OAuthCredentials,
-	type OAuthLoginCallbacks,
-	type OAuthProviderId,
-} from "@deepseek-helmsman/ai";
+import type { OAuthCredentials, OAuthLoginCallbacks, OAuthProviderId } from "@deepseek-helmsman/ai";
 import { getOAuthApiKey, getOAuthProvider, getOAuthProviders } from "@deepseek-helmsman/ai/oauth";
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
@@ -36,7 +30,7 @@ export type AuthStorageData = Record<string, AuthCredential>;
 
 export type AuthStatus = {
 	configured: boolean;
-	source?: "stored" | "runtime" | "environment" | "fallback" | "models_json_key" | "models_json_command";
+	source?: "stored";
 	label?: string;
 };
 
@@ -195,8 +189,6 @@ export class InMemoryAuthStorageBackend implements AuthStorageBackend {
  */
 export class AuthStorage {
 	private data: AuthStorageData = {};
-	private runtimeOverrides: Map<string, string> = new Map();
-	private fallbackResolver?: (provider: string) => string | undefined;
 	private loadError: Error | null = null;
 	private errors: Error[] = [];
 	private storage: AuthStorageBackend;
@@ -218,29 +210,6 @@ export class AuthStorage {
 		const storage = new InMemoryAuthStorageBackend();
 		storage.withLock(() => ({ result: undefined, next: JSON.stringify(data, null, 2) }));
 		return AuthStorage.fromStorage(storage);
-	}
-
-	/**
-	 * Set a runtime API key override (not persisted to disk).
-	 * Used for CLI --api-key flag.
-	 */
-	setRuntimeApiKey(provider: string, apiKey: string): void {
-		this.runtimeOverrides.set(provider, apiKey);
-	}
-
-	/**
-	 * Remove a runtime API key override.
-	 */
-	removeRuntimeApiKey(provider: string): void {
-		this.runtimeOverrides.delete(provider);
-	}
-
-	/**
-	 * Set a fallback resolver for API keys not found in auth.json or env vars.
-	 * Used for DeepSeek provider keys from models.json.
-	 */
-	setFallbackResolver(resolver: (provider: string) => string | undefined): void {
-		this.fallbackResolver = resolver;
 	}
 
 	private recordError(error: unknown): void {
@@ -336,10 +305,7 @@ export class AuthStorage {
 	 * Unlike getApiKey(), this doesn't refresh OAuth tokens.
 	 */
 	hasAuth(provider: string): boolean {
-		if (this.runtimeOverrides.has(provider)) return true;
 		if (this.data[provider]) return true;
-		if (getEnvApiKey(provider)) return true;
-		if (this.fallbackResolver?.(provider)) return true;
 		return false;
 	}
 
@@ -349,19 +315,6 @@ export class AuthStorage {
 	getAuthStatus(provider: string): AuthStatus {
 		if (this.data[provider]) {
 			return { configured: true, source: "stored" };
-		}
-
-		if (this.runtimeOverrides.has(provider)) {
-			return { configured: false, source: "runtime", label: "--api-key" };
-		}
-
-		const envKeys = findEnvKeys(provider);
-		if (envKeys?.[0]) {
-			return { configured: false, source: "environment", label: envKeys[0] };
-		}
-
-		if (this.fallbackResolver?.(provider)) {
-			return { configured: false, source: "fallback", label: "models.json provider config" };
 		}
 
 		return { configured: false };
@@ -453,19 +406,10 @@ export class AuthStorage {
 	/**
 	 * Get API key for a provider.
 	 * Priority:
-	 * 1. Runtime override (CLI --api-key)
-	 * 2. API key from auth.json
-	 * 3. OAuth token from auth.json (auto-refreshed with locking)
-	 * 4. Environment variable
-	 * 5. Fallback resolver (models.json provider config)
+	 * 1. API key from auth.json
+	 * 2. OAuth token from auth.json (auto-refreshed with locking)
 	 */
-	async getApiKey(providerId: string, options?: { includeFallback?: boolean }): Promise<string | undefined> {
-		// Runtime override takes highest priority
-		const runtimeKey = this.runtimeOverrides.get(providerId);
-		if (runtimeKey) {
-			return runtimeKey;
-		}
-
+	async getApiKey(providerId: string, _options?: { includeFallback?: boolean }): Promise<string | undefined> {
 		const cred = this.data[providerId];
 
 		if (cred?.type === "api_key") {
@@ -508,15 +452,6 @@ export class AuthStorage {
 				// Token not expired, use current access token
 				return provider.getApiKey(cred);
 			}
-		}
-
-		// Fall back to environment variable
-		const envKey = getEnvApiKey(providerId);
-		if (envKey) return envKey;
-
-		// Fall back to custom resolver (e.g., models.json provider config)
-		if (options?.includeFallback !== false) {
-			return this.fallbackResolver?.(providerId) ?? undefined;
 		}
 
 		return undefined;

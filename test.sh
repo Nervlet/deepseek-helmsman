@@ -26,4 +26,4 @@ export DEEPSEEK_HELMSMAN_NO_LOCAL_LLM=1
 unset DEEPSEEK_API_KEY
 
 echo "Running tests without API keys..."
-npm test
+bun run test

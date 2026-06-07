@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { runCli } from "./cli-runner.ts";
 
 runCli();

@@ -103,7 +103,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries, baseDelayMs: 1 } });
 
 		session = new AgentSession({
@@ -205,7 +205,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } });
 		session = new AgentSession({
 			agent,
@@ -290,7 +290,7 @@ describe("AgentSession retry", () => {
 		const settingsManager = SettingsManager.create(tempDir, tempDir);
 		const authStorage = AuthStorage.create(join(tempDir, "auth.json"));
 		const modelRegistry = ModelRegistry.create(authStorage, tempDir);
-		authStorage.setRuntimeApiKey("deepseek", "test-key");
+		authStorage.set("deepseek", { type: "api_key", key: "test-key" });
 		settingsManager.applyOverrides({ retry: { enabled: true, maxRetries: 3, baseDelayMs: 1 } });
 
 		session = new AgentSession({
